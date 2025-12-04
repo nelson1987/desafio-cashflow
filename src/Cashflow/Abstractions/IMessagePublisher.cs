@@ -16,3 +16,4 @@ public interface IMessagePublisher
     Task PublicarAsync<T>(string topico, T mensagem, CancellationToken cancellationToken = default) where T : class;
 }
 
+

@@ -44,3 +44,4 @@ public class SaldoConsolidadoConfiguration : IEntityTypeConfiguration<SaldoConso
     }
 }
 
+

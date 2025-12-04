@@ -7,6 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- DotNetEnv - Carregamento de variáveis de ambiente -->
+    <PackageReference Include="DotNetEnv" Version="3.1.1" />
+    
     <!-- Entity Framework Core - PostgreSQL -->
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.2" />
     

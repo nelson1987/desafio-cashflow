@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Cashflow.Abstractions;
+using Cashflow.Infrastructure.Configuration;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Polly;
@@ -18,10 +19,6 @@ public class RedisCacheService : ICacheService
     private readonly ResiliencePipeline _resiliencePipeline;
     private readonly JsonSerializerOptions _jsonOptions;
 
-    // Configurações de resiliência
-    private static readonly TimeSpan DefaultTtl = TimeSpan.FromMinutes(30);
-    private static readonly TimeSpan CircuitBreakerDuration = TimeSpan.FromSeconds(30);
-
     public RedisCacheService(
         IDistributedCache cache,
         ILogger<RedisCacheService> logger)
@@ -34,12 +31,14 @@ public class RedisCacheService : ICacheService
             WriteIndented = false
         };
 
+        var circuitBreakerDuration = TimeSpan.FromSeconds(InfrastructureSettings.Resilience.CircuitBreakerDurationSeconds);
+
         // Configura pipeline de resiliência com Polly
         _resiliencePipeline = new ResiliencePipelineBuilder()
             .AddRetry(new RetryStrategyOptions
             {
-                MaxRetryAttempts = 3,
-                Delay = TimeSpan.FromMilliseconds(200),
+                MaxRetryAttempts = InfrastructureSettings.Resilience.MaxRetryAttempts,
+                Delay = TimeSpan.FromMilliseconds(InfrastructureSettings.Resilience.RetryBaseDelayMs),
                 BackoffType = DelayBackoffType.Exponential,
                 UseJitter = true,
                 OnRetry = args =>
@@ -53,15 +52,15 @@ public class RedisCacheService : ICacheService
             })
             .AddCircuitBreaker(new CircuitBreakerStrategyOptions
             {
-                FailureRatio = 0.5,
-                MinimumThroughput = 10,
-                SamplingDuration = TimeSpan.FromSeconds(30),
-                BreakDuration = CircuitBreakerDuration,
+                FailureRatio = InfrastructureSettings.Resilience.CircuitBreakerFailureRatio,
+                MinimumThroughput = InfrastructureSettings.Resilience.CacheMinimumThroughput,
+                SamplingDuration = TimeSpan.FromSeconds(InfrastructureSettings.Resilience.SamplingDurationSeconds),
+                BreakDuration = circuitBreakerDuration,
                 OnOpened = args =>
                 {
                     _logger.LogWarning(
                         "Circuit breaker ABERTO para o cache. Duração: {Duration}s",
-                        CircuitBreakerDuration.TotalSeconds);
+                        circuitBreakerDuration.TotalSeconds);
                     return ValueTask.CompletedTask;
                 },
                 OnClosed = args =>
@@ -70,9 +69,11 @@ public class RedisCacheService : ICacheService
                     return ValueTask.CompletedTask;
                 }
             })
-            .AddTimeout(TimeSpan.FromSeconds(5))
+            .AddTimeout(TimeSpan.FromSeconds(InfrastructureSettings.Resilience.CacheTimeoutSeconds))
             .Build();
     }
+
+    private TimeSpan DefaultTtl => TimeSpan.FromMinutes(InfrastructureSettings.Cache.DefaultTtlMinutes);
 
     public async Task<T?> ObterAsync<T>(string chave, CancellationToken cancellationToken = default) where T : class
     {
@@ -197,4 +198,3 @@ public static class CacheKeys
     
     public static string LancamentosDoDia(DateTime data) => $"lancamentos:dia:{data:yyyy-MM-dd}";
 }
-

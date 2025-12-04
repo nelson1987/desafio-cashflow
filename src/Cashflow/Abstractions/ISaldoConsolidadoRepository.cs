@@ -26,3 +26,4 @@ public interface ISaldoConsolidadoRepository
     Task<SaldoDiario> RecalcularAsync(DateTime data, CancellationToken cancellationToken = default);
 }
 
+

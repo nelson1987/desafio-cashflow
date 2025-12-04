@@ -57,3 +57,4 @@ public class LancamentoConfiguration : IEntityTypeConfiguration<LancamentoEntity
     }
 }
 
+

@@ -36,3 +36,4 @@ public interface ICacheService
     Task<T?> ObterOuDefinirAsync<T>(string chave, Func<Task<T?>> factory, TimeSpan? ttl = null, CancellationToken cancellationToken = default) where T : class;
 }
 
+

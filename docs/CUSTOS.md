@@ -327,3 +327,4 @@ Para estimativas personalizadas:
 - [Memorystore Pricing](https://cloud.google.com/memorystore/docs/redis/pricing)
 - [Committed Use Discounts](https://cloud.google.com/compute/docs/instances/signing-up-committed-use-discounts)
 
+

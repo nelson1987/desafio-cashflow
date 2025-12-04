@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using Cashflow.Abstractions;
+using Cashflow.Infrastructure.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Polly;
@@ -37,12 +38,14 @@ public class RabbitMqPublisher : IMessagePublisher, IAsyncDisposable
             WriteIndented = false
         };
 
+        var circuitBreakerDuration = TimeSpan.FromSeconds(InfrastructureSettings.Resilience.CircuitBreakerDurationSeconds);
+
         // Configura pipeline de resiliência
         _resiliencePipeline = new ResiliencePipelineBuilder()
             .AddRetry(new RetryStrategyOptions
             {
-                MaxRetryAttempts = 3,
-                Delay = TimeSpan.FromMilliseconds(500),
+                MaxRetryAttempts = InfrastructureSettings.Resilience.MaxRetryAttempts,
+                Delay = TimeSpan.FromMilliseconds(InfrastructureSettings.Resilience.PublisherRetryDelayMs),
                 BackoffType = DelayBackoffType.Exponential,
                 UseJitter = true,
                 OnRetry = args =>
@@ -56,10 +59,10 @@ public class RabbitMqPublisher : IMessagePublisher, IAsyncDisposable
             })
             .AddCircuitBreaker(new CircuitBreakerStrategyOptions
             {
-                FailureRatio = 0.5,
-                MinimumThroughput = 5,
-                SamplingDuration = TimeSpan.FromSeconds(30),
-                BreakDuration = TimeSpan.FromSeconds(30),
+                FailureRatio = InfrastructureSettings.Resilience.CircuitBreakerFailureRatio,
+                MinimumThroughput = InfrastructureSettings.Resilience.MessagingMinimumThroughput,
+                SamplingDuration = TimeSpan.FromSeconds(InfrastructureSettings.Resilience.SamplingDurationSeconds),
+                BreakDuration = circuitBreakerDuration,
                 OnOpened = args =>
                 {
                     _logger.LogWarning("Circuit breaker ABERTO para RabbitMQ");
@@ -71,7 +74,7 @@ public class RabbitMqPublisher : IMessagePublisher, IAsyncDisposable
                     return ValueTask.CompletedTask;
                 }
             })
-            .AddTimeout(TimeSpan.FromSeconds(10))
+            .AddTimeout(TimeSpan.FromSeconds(InfrastructureSettings.Resilience.MessagingTimeoutSeconds))
             .Build();
     }
 
@@ -226,4 +229,3 @@ public class RabbitMqPublisher : IMessagePublisher, IAsyncDisposable
         GC.SuppressFinalize(this);
     }
 }
-

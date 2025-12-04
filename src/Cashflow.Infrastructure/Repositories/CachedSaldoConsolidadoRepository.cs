@@ -1,5 +1,6 @@
 using Cashflow.Abstractions;
 using Cashflow.Infrastructure.Cache;
+using Cashflow.Infrastructure.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Cashflow.Infrastructure.Repositories;
@@ -13,7 +14,7 @@ public class CachedSaldoConsolidadoRepository : ISaldoConsolidadoRepository
     private readonly ICacheService _cache;
     private readonly ILogger<CachedSaldoConsolidadoRepository> _logger;
 
-    private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(15);
+    private TimeSpan CacheTtl => TimeSpan.FromMinutes(InfrastructureSettings.Cache.SaldoConsolidadoTtlMinutes);
 
     public CachedSaldoConsolidadoRepository(
         ISaldoConsolidadoRepository inner,
@@ -72,4 +73,3 @@ public class CachedSaldoConsolidadoRepository : ISaldoConsolidadoRepository
         return saldo;
     }
 }
-

@@ -1,5 +1,6 @@
 using Cashflow.Abstractions;
 using Cashflow.Infrastructure.Cache;
+using Cashflow.Infrastructure.Configuration;
 using Cashflow.Infrastructure.Data;
 using Cashflow.Infrastructure.Messaging;
 using Cashflow.Infrastructure.Repositories;
@@ -18,24 +19,35 @@ public static class DependencyInjection
     /// <summary>
     /// Adiciona os serviços de infraestrutura ao container de DI
     /// </summary>
+    /// <param name="services">Coleção de serviços</param>
+    /// <param name="configuration">Configuração da aplicação</param>
+    /// <param name="loadEnvFile">Se deve carregar o arquivo .env</param>
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        bool loadEnvFile = true)
     {
+        // Carrega variáveis de ambiente do arquivo .env
+        if (loadEnvFile)
+        {
+            EnvironmentLoader.Load();
+        }
+
         // Configura o DbContext com PostgreSQL
         services.AddDbContext<CashflowDbContext>(options =>
         {
             var connectionString = configuration.GetConnectionString("PostgreSQL")
+                ?? Environment.GetEnvironmentVariable("CONNECTION_STRING_POSTGRESQL")
                 ?? throw new InvalidOperationException("Connection string 'PostgreSQL' não encontrada.");
 
             options.UseNpgsql(connectionString, npgsqlOptions =>
             {
                 npgsqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 3,
-                    maxRetryDelay: TimeSpan.FromSeconds(30),
+                    maxRetryCount: InfrastructureSettings.Database.MaxRetryCount,
+                    maxRetryDelay: TimeSpan.FromSeconds(InfrastructureSettings.Database.MaxRetryDelaySeconds),
                     errorCodesToAdd: null);
                 
-                npgsqlOptions.CommandTimeout(30);
+                npgsqlOptions.CommandTimeout(InfrastructureSettings.Database.CommandTimeoutSeconds);
             });
         });
 
@@ -54,16 +66,46 @@ public static class DependencyInjection
         services.AddStackExchangeRedisCache(options =>
         {
             options.Configuration = configuration.GetConnectionString("Redis")
+                ?? Environment.GetEnvironmentVariable("CONNECTION_STRING_REDIS")
                 ?? "localhost:6379";
-            options.InstanceName = "Cashflow:";
+            options.InstanceName = InfrastructureSettings.Cache.InstanceName;
         });
 
         // Registra o serviço de cache
         services.AddSingleton<ICacheService, RedisCacheService>();
 
         // Configura o RabbitMQ
-        services.Configure<RabbitMqSettings>(
-            configuration.GetSection(RabbitMqSettings.SectionName));
+        services.Configure<RabbitMqSettings>(opts =>
+        {
+            var section = configuration.GetSection(RabbitMqSettings.SectionName);
+            
+            opts.Host = section["Host"] 
+                ?? Environment.GetEnvironmentVariable("RABBITMQ_HOST") 
+                ?? "localhost";
+            opts.Port = int.TryParse(section["Port"] ?? Environment.GetEnvironmentVariable("RABBITMQ_PORT"), out var port) 
+                ? port : 5672;
+            opts.Username = section["Username"] 
+                ?? Environment.GetEnvironmentVariable("RABBITMQ_USER") 
+                ?? "guest";
+            opts.Password = section["Password"] 
+                ?? Environment.GetEnvironmentVariable("RABBITMQ_PASSWORD") 
+                ?? "guest";
+            opts.VirtualHost = section["VirtualHost"] 
+                ?? Environment.GetEnvironmentVariable("RABBITMQ_VHOST") 
+                ?? "/";
+            opts.Exchange = section["Exchange"] 
+                ?? Environment.GetEnvironmentVariable("RABBITMQ_EXCHANGE") 
+                ?? "cashflow.events";
+            opts.ExchangeType = section["ExchangeType"] 
+                ?? Environment.GetEnvironmentVariable("RABBITMQ_EXCHANGE_TYPE") 
+                ?? "topic";
+            opts.AutomaticRecoveryEnabled = bool.TryParse(
+                section["AutomaticRecoveryEnabled"] ?? Environment.GetEnvironmentVariable("RABBITMQ_AUTOMATIC_RECOVERY"), 
+                out var autoRecovery) ? autoRecovery : true;
+            opts.NetworkRecoveryInterval = int.TryParse(
+                section["NetworkRecoveryInterval"] ?? Environment.GetEnvironmentVariable("RABBITMQ_NETWORK_RECOVERY_INTERVAL"), 
+                out var interval) ? interval : 10;
+        });
 
         // Registra o publicador de mensagens
         services.AddSingleton<IMessagePublisher, RabbitMqPublisher>();
@@ -81,7 +123,9 @@ public static class DependencyInjection
         var healthChecks = services.AddHealthChecks();
 
         // Health check do PostgreSQL
-        var postgresConnection = configuration.GetConnectionString("PostgreSQL");
+        var postgresConnection = configuration.GetConnectionString("PostgreSQL")
+            ?? Environment.GetEnvironmentVariable("CONNECTION_STRING_POSTGRESQL");
+        
         if (!string.IsNullOrEmpty(postgresConnection))
         {
             healthChecks.AddNpgSql(
@@ -91,7 +135,9 @@ public static class DependencyInjection
         }
 
         // Health check do Redis
-        var redisConnection = configuration.GetConnectionString("Redis");
+        var redisConnection = configuration.GetConnectionString("Redis")
+            ?? Environment.GetEnvironmentVariable("CONNECTION_STRING_REDIS");
+        
         if (!string.IsNullOrEmpty(redisConnection))
         {
             healthChecks.AddRedis(
@@ -101,18 +147,29 @@ public static class DependencyInjection
         }
 
         // Health check do RabbitMQ
-        var rabbitMqSettings = configuration.GetSection(RabbitMqSettings.SectionName).Get<RabbitMqSettings>();
-        if (rabbitMqSettings != null)
+        var rabbitHost = configuration.GetSection("RabbitMQ:Host").Value 
+            ?? Environment.GetEnvironmentVariable("RABBITMQ_HOST");
+        
+        if (!string.IsNullOrEmpty(rabbitHost))
         {
             healthChecks.AddRabbitMQ(sp =>
             {
                 var factory = new ConnectionFactory
                 {
-                    HostName = rabbitMqSettings.Host,
-                    Port = rabbitMqSettings.Port,
-                    UserName = rabbitMqSettings.Username,
-                    Password = rabbitMqSettings.Password,
-                    VirtualHost = rabbitMqSettings.VirtualHost
+                    HostName = rabbitHost,
+                    Port = int.TryParse(
+                        configuration.GetSection("RabbitMQ:Port").Value 
+                        ?? Environment.GetEnvironmentVariable("RABBITMQ_PORT"), 
+                        out var port) ? port : 5672,
+                    UserName = configuration.GetSection("RabbitMQ:Username").Value 
+                        ?? Environment.GetEnvironmentVariable("RABBITMQ_USER") 
+                        ?? "guest",
+                    Password = configuration.GetSection("RabbitMQ:Password").Value 
+                        ?? Environment.GetEnvironmentVariable("RABBITMQ_PASSWORD") 
+                        ?? "guest",
+                    VirtualHost = configuration.GetSection("RabbitMQ:VirtualHost").Value 
+                        ?? Environment.GetEnvironmentVariable("RABBITMQ_VHOST") 
+                        ?? "/"
                 };
                 return factory.CreateConnectionAsync().GetAwaiter().GetResult();
             },
@@ -143,4 +200,3 @@ public static class DependencyInjection
         return await context.Database.CanConnectAsync();
     }
 }
-

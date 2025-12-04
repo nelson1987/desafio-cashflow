@@ -70,3 +70,4 @@ public static class QueueNames
     public const string ConsolidacaoLancamentos = "cashflow.consolidacao.lancamentos";
 }
 
+
