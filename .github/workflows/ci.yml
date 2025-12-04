@@ -1,0 +1,328 @@
+# ============================================
+# Cashflow - CI/CD Pipeline
+# ============================================
+# Pipeline completo com:
+# - Build e Restore
+# - Formatação de código
+# - Testes unitários
+# - Testes de integração com Testcontainers
+# - Análise de código
+# - Build de imagens Docker
+# ============================================
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop, feature/*]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  DOTNET_VERSION: "9.0.x"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  # ==========================================
+  # 🔨 Build e Restore
+  # ==========================================
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: 📦 Cache de pacotes NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: 📥 Restore de dependências
+        run: dotnet restore Cashflow.sln
+
+      - name: 🏗️ Build da solução
+        run: dotnet build Cashflow.sln --configuration Release --no-restore
+
+      - name: 📤 Upload de artefatos
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            **/bin/Release/
+            !**/obj/
+          retention-days: 1
+
+  # ==========================================
+  # 📝 Formatação e Análise de Código
+  # ==========================================
+  format:
+    name: Format & Lint
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: 📥 Restore de dependências
+        run: dotnet restore Cashflow.sln
+
+      - name: 🎨 Verificar formatação de código
+        run: dotnet format Cashflow.sln --verify-no-changes --verbosity diagnostic
+        continue-on-error: true
+
+      - name: 📊 Análise de código com dotnet analyze
+        run: dotnet build Cashflow.sln --configuration Release /p:TreatWarningsAsErrors=false
+        continue-on-error: true
+
+  # ==========================================
+  # 🧪 Testes Unitários
+  # ==========================================
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: 📦 Cache de pacotes NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: 📥 Restore de dependências
+        run: dotnet restore Cashflow.sln
+
+      - name: 🧪 Executar testes unitários
+        run: |
+          dotnet test tests/Cashflow.Tests/Cashflow.Tests.csproj \
+            --configuration Release \
+            --no-restore \
+            --logger "trx;LogFileName=unit-tests.trx" \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./TestResults
+
+      - name: 📊 Upload de resultados de testes
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-test-results
+          path: ./TestResults
+          retention-days: 7
+
+      - name: 📈 Publicar relatório de testes
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Unit Tests Report
+          path: ./TestResults/*.trx
+          reporter: dotnet-trx
+          fail-on-error: true
+
+  # ==========================================
+  # 🔌 Testes de Integração
+  # ==========================================
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: build
+
+    services:
+      docker:
+        image: docker:dind
+        options: --privileged
+
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: 📦 Cache de pacotes NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: 📥 Restore de dependências
+        run: dotnet restore Cashflow.sln
+
+      - name: 🐳 Setup Docker para Testcontainers
+        run: |
+          docker --version
+          docker info
+
+      - name: 🔌 Executar testes de integração
+        run: |
+          dotnet test tests/Cashflow.IntegrationTests/Cashflow.IntegrationTests.csproj \
+            --configuration Release \
+            --no-restore \
+            --logger "trx;LogFileName=integration-tests.trx" \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./TestResults
+        env:
+          TESTCONTAINERS_RYUK_DISABLED: false
+          DOCKER_HOST: unix:///var/run/docker.sock
+
+      - name: 📊 Upload de resultados de testes
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-results
+          path: ./TestResults
+          retention-days: 7
+
+      - name: 📈 Publicar relatório de testes
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Integration Tests Report
+          path: ./TestResults/*.trx
+          reporter: dotnet-trx
+          fail-on-error: true
+
+  # ==========================================
+  # 🐳 Build de Imagens Docker
+  # ==========================================
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+
+      - name: 🐳 Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔑 Login no Docker Hub
+        uses: docker/login-action@v3
+        if: github.event_name == 'push'
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+        continue-on-error: true
+
+      - name: 🏷️ Extrair metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            cashflow/api
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: 🐳 Build da imagem Docker (API)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: cashflow/api:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 🐳 Build da imagem Docker (Worker)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.worker
+          push: false
+          tags: cashflow/worker:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ==========================================
+  # 📊 Cobertura de Código
+  # ==========================================
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests]
+
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+
+      - name: 📥 Download de resultados de testes unitários
+        uses: actions/download-artifact@v4
+        with:
+          name: unit-test-results
+          path: ./TestResults/unit
+
+      - name: 📥 Download de resultados de testes de integração
+        uses: actions/download-artifact@v4
+        with:
+          name: integration-test-results
+          path: ./TestResults/integration
+        continue-on-error: true
+
+      - name: 📊 Upload para Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          directory: ./TestResults
+          fail_ci_if_error: false
+          verbose: true
+        continue-on-error: true
+
+  # ==========================================
+  # ✅ Status Final
+  # ==========================================
+  status-check:
+    name: Status Check
+    runs-on: ubuntu-latest
+    needs: [build, format, unit-tests, integration-tests]
+    if: always()
+
+    steps:
+      - name: ✅ Verificar status dos jobs
+        run: |
+          if [ "${{ needs.build.result }}" != "success" ]; then
+            echo "❌ Build falhou"
+            exit 1
+          fi
+          if [ "${{ needs.unit-tests.result }}" != "success" ]; then
+            echo "❌ Testes unitários falharam"
+            exit 1
+          fi
+          if [ "${{ needs.integration-tests.result }}" != "success" ]; then
+            echo "❌ Testes de integração falharam"
+            exit 1
+          fi
+          echo "✅ Todos os jobs passaram com sucesso!"
+
