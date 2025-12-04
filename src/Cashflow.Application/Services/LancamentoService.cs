@@ -7,6 +7,9 @@ using FluentValidation;
 
 using Microsoft.Extensions.Logging;
 
+using static Cashflow.Application.ApplicationConstants;
+using static Cashflow.DomainConstants;
+
 namespace Cashflow.Application.Services;
 
 /// <summary>
@@ -40,7 +43,7 @@ public class LancamentoService : ILancamentoService
         if (!validationResult.IsValid)
         {
             var errors = validationResult.Errors.Select(e => e.ErrorMessage);
-            _logger.LogWarning("Validação falhou ao criar lançamento: {Errors}", string.Join(", ", errors));
+            _logger.LogWarning(LogTemplates.ValidacaoFalhou, string.Join(", ", errors));
             return Result.Failure<LancamentoResponse>(errors);
         }
 
@@ -57,7 +60,7 @@ public class LancamentoService : ILancamentoService
             await _repository.AdicionarAsync(lancamento, cancellationToken);
 
             _logger.LogInformation(
-                "Lançamento criado com sucesso. Id: {Id}, Tipo: {Tipo}, Valor: {Valor}",
+                LogTemplates.LancamentoCriadoSucesso,
                 lancamento.Id,
                 lancamento.Tipo,
                 lancamento.Valor);
@@ -66,20 +69,20 @@ public class LancamentoService : ILancamentoService
             var evento = new LancamentoCriadoEvent(lancamento);
             await _messagePublisher.PublicarAsync(evento, cancellationToken);
 
-            _logger.LogDebug("Evento LancamentoCriado publicado. LancamentoId: {Id}", lancamento.Id);
+            _logger.LogDebug(LogTemplates.EventoLancamentoCriadoPublicado, lancamento.Id);
 
             // 5. Retorna resposta
             return Result.Success(LancamentoResponse.FromDomain(lancamento));
         }
         catch (ArgumentException ex)
         {
-            _logger.LogWarning(ex, "Erro de validação de domínio ao criar lançamento");
+            _logger.LogWarning(ex, LogTemplates.ErroValidacaoDominio);
             return Result.Failure<LancamentoResponse>(ex.Message);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erro inesperado ao criar lançamento");
-            return Result.Failure<LancamentoResponse>("Ocorreu um erro ao criar o lançamento.");
+            _logger.LogError(ex, LogTemplates.ErroInesperadoCriarLancamento);
+            return Result.Failure<LancamentoResponse>(ErrosLancamento.ErroAoCriar);
         }
     }
 
@@ -93,16 +96,16 @@ public class LancamentoService : ILancamentoService
 
             if (lancamento is null)
             {
-                _logger.LogDebug("Lançamento não encontrado. Id: {Id}", id);
-                return Result.Failure<LancamentoResponse>($"Lançamento com ID {id} não encontrado.");
+                _logger.LogDebug(LogTemplates.LancamentoNaoEncontrado, id);
+                return Result.Failure<LancamentoResponse>(string.Format(ErrosLancamento.NaoEncontrado, id));
             }
 
             return Result.Success(LancamentoResponse.FromDomain(lancamento));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erro ao obter lançamento por ID: {Id}", id);
-            return Result.Failure<LancamentoResponse>("Ocorreu um erro ao buscar o lançamento.");
+            _logger.LogError(ex, LogTemplates.ErroObterLancamentoPorId, id);
+            return Result.Failure<LancamentoResponse>(ErrosLancamento.ErroAoBuscar);
         }
     }
 
@@ -111,9 +114,9 @@ public class LancamentoService : ILancamentoService
         int tamanhoPagina,
         CancellationToken cancellationToken = default)
     {
-        if (pagina < 1) pagina = 1;
-        if (tamanhoPagina < 1) tamanhoPagina = 10;
-        if (tamanhoPagina > 100) tamanhoPagina = 100;
+        if (pagina < Paginacao.PaginaMinima) pagina = Paginacao.PaginaMinima;
+        if (tamanhoPagina < Paginacao.PaginaMinima) tamanhoPagina = Paginacao.TamanhoPadrao;
+        if (tamanhoPagina > Paginacao.TamanhoMaximo) tamanhoPagina = Paginacao.TamanhoMaximo;
 
         try
         {
@@ -132,8 +135,8 @@ public class LancamentoService : ILancamentoService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erro ao listar lançamentos. Página: {Pagina}, Tamanho: {Tamanho}", pagina, tamanhoPagina);
-            return Result.Failure<LancamentosListResponse>("Ocorreu um erro ao listar os lançamentos.");
+            _logger.LogError(ex, LogTemplates.ErroListarLancamentos, pagina, tamanhoPagina);
+            return Result.Failure<LancamentosListResponse>(ErrosLancamento.ErroAoListar);
         }
     }
 
@@ -150,9 +153,8 @@ public class LancamentoService : ILancamentoService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erro ao obter lançamentos por data: {Data}", data);
-            return Result.Failure<IEnumerable<LancamentoResponse>>("Ocorreu um erro ao buscar os lançamentos.");
+            _logger.LogError(ex, LogTemplates.ErroObterLancamentosPorData, data);
+            return Result.Failure<IEnumerable<LancamentoResponse>>(ErrosLancamento.ErroAoBuscar);
         }
     }
 }
-

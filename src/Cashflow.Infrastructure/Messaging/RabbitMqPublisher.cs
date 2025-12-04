@@ -13,6 +13,8 @@ using Polly.Retry;
 
 using RabbitMQ.Client;
 
+using static Cashflow.Infrastructure.InfrastructureConstants;
+
 namespace Cashflow.Infrastructure.Messaging;
 
 /// <summary>
@@ -55,7 +57,7 @@ public class RabbitMqPublisher : IMessagePublisher, IAsyncDisposable
                 OnRetry = args =>
                 {
                     _logger.LogWarning(
-                        "Tentativa {Attempt} de publicação falhou. Tentando novamente em {Delay}ms",
+                        LogTemplates.RetryPublicacao,
                         args.AttemptNumber + 1,
                         args.RetryDelay.TotalMilliseconds);
                     return ValueTask.CompletedTask;
@@ -69,12 +71,12 @@ public class RabbitMqPublisher : IMessagePublisher, IAsyncDisposable
                 BreakDuration = circuitBreakerDuration,
                 OnOpened = args =>
                 {
-                    _logger.LogWarning("Circuit breaker ABERTO para RabbitMQ");
+                    _logger.LogWarning(LogTemplates.CircuitBreakerAbertoRabbitMq);
                     return ValueTask.CompletedTask;
                 },
                 OnClosed = args =>
                 {
-                    _logger.LogInformation("Circuit breaker FECHADO para RabbitMQ");
+                    _logger.LogInformation(LogTemplates.CircuitBreakerFechadoRabbitMq);
                     return ValueTask.CompletedTask;
                 }
             })
@@ -102,7 +104,7 @@ public class RabbitMqPublisher : IMessagePublisher, IAsyncDisposable
                 var properties = new BasicProperties
                 {
                     Persistent = true,
-                    ContentType = "application/json",
+                    ContentType = ContentTypes.ApplicationJson,
                     MessageId = Guid.NewGuid().ToString(),
                     Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds()),
                     Type = typeof(T).Name
@@ -117,7 +119,7 @@ public class RabbitMqPublisher : IMessagePublisher, IAsyncDisposable
                     cancellationToken: ct);
 
                 _logger.LogDebug(
-                    "Mensagem publicada. Exchange: {Exchange}, RoutingKey: {RoutingKey}, Type: {Type}",
+                    LogTemplates.MensagemPublicada,
                     _settings.Exchange,
                     topico,
                     typeof(T).Name);
@@ -127,14 +129,14 @@ public class RabbitMqPublisher : IMessagePublisher, IAsyncDisposable
         catch (BrokenCircuitException)
         {
             _logger.LogError(
-                "Circuit breaker aberto. Mensagem não publicada. Tipo: {Type}",
+                LogTemplates.CircuitBreakerMensagemNaoPublicada,
                 typeof(T).Name);
             throw;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex,
-                "Erro ao publicar mensagem. Tipo: {Type}, Tópico: {Topico}",
+                LogTemplates.ErroPublicarMensagem,
                 typeof(T).Name,
                 topico);
             throw;
@@ -189,7 +191,7 @@ public class RabbitMqPublisher : IMessagePublisher, IAsyncDisposable
                 cancellationToken: cancellationToken);
 
             _logger.LogInformation(
-                "Conexão com RabbitMQ estabelecida. Host: {Host}:{Port}",
+                LogTemplates.ConexaoRabbitMqEstabelecida,
                 _settings.Host,
                 _settings.Port);
         }

@@ -186,4 +186,3 @@ public class LancamentoRepositoryTests : IAsyncLifetime
         saldo.ShouldBe(1000m);
     }
 }
-

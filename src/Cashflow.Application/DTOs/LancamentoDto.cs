@@ -11,7 +11,7 @@ public record CriarLancamentoRequest
     public decimal Valor { get; init; }
 
     /// <summary>
-    /// Tipo do lançamento (Credito = 1, Debito = 2)
+    /// Tipo do lançamento (Credito = <see cref="TipoLancamento.Credito"/>, Debito = <see cref="TipoLancamento.Debito"/>)
     /// </summary>
     public TipoLancamento Tipo { get; init; }
 
@@ -58,6 +58,5 @@ public record LancamentosListResponse
     public int TamanhoPagina { get; init; }
     public int TotalPaginas => (int)Math.Ceiling((double)TotalItems / TamanhoPagina);
     public bool TemProximaPagina => Pagina < TotalPaginas;
-    public bool TemPaginaAnterior => Pagina > 1;
+    public bool TemPaginaAnterior => Pagina > DomainConstants.Paginacao.PaginaMinima;
 }
-

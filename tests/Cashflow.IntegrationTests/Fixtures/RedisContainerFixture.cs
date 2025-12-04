@@ -86,4 +86,3 @@ public class RedisCollection : ICollectionFixture<RedisContainerFixture>
 {
     public const string Name = "Redis";
 }
-

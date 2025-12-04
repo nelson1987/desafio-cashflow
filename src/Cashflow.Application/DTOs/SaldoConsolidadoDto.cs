@@ -1,3 +1,5 @@
+using static Cashflow.DomainConstants;
+
 namespace Cashflow.Application.DTOs;
 
 /// <summary>
@@ -23,10 +25,10 @@ public record SaldoConsolidadoResponse
     public static SaldoConsolidadoResponse Vazio(DateTime data) => new()
     {
         Data = data.Date,
-        TotalCreditos = 0,
-        TotalDebitos = 0,
-        Saldo = 0,
-        QuantidadeLancamentos = 0
+        TotalCreditos = ValoresPadrao.Zero,
+        TotalDebitos = ValoresPadrao.Zero,
+        Saldo = ValoresPadrao.Zero,
+        QuantidadeLancamentos = ValoresPadrao.QuantidadeZero
     };
 }
 
@@ -52,4 +54,3 @@ public record ResumoConsolidadoResponse
     public int TotalLancamentos { get; init; }
     public int DiasComMovimentacao { get; init; }
 }
-

@@ -2,6 +2,9 @@ using Cashflow.Application.DTOs;
 
 using FluentValidation;
 
+using static Cashflow.Application.ApplicationConstants;
+using static Cashflow.DomainConstants;
+
 namespace Cashflow.Application.Validators;
 
 /// <summary>
@@ -12,24 +15,26 @@ public class CriarLancamentoValidator : AbstractValidator<CriarLancamentoRequest
     public CriarLancamentoValidator()
     {
         RuleFor(x => x.Valor)
-            .GreaterThan(0)
-            .WithMessage("O valor deve ser maior que zero.");
+            .GreaterThan(ValoresMonetarios.ValorMinimo)
+            .WithMessage(ValidacaoLancamento.ValorDeveSerMaiorQueZero);
 
         RuleFor(x => x.Tipo)
             .IsInEnum()
-            .WithMessage("Tipo de lançamento inválido. Use 1 para Crédito ou 2 para Débito.");
+            .WithMessage(string.Format(
+                ValidacaoLancamento.TipoInvalido,
+                (int)TipoLancamento.Credito,
+                (int)TipoLancamento.Debito));
 
         RuleFor(x => x.Data)
             .NotEmpty()
-            .WithMessage("A data é obrigatória.")
-            .LessThanOrEqualTo(DateTime.Today.AddDays(1))
-            .WithMessage("A data não pode ser futura.");
+            .WithMessage(ValidacaoLancamento.DataObrigatoria)
+            .LessThanOrEqualTo(DateTime.Today.AddDays(LancamentoLimites.DiasPermitidosFuturos))
+            .WithMessage(ValidacaoLancamento.DataNaoPodeFutura);
 
         RuleFor(x => x.Descricao)
             .NotEmpty()
-            .WithMessage("A descrição é obrigatória.")
-            .MaximumLength(500)
-            .WithMessage("A descrição deve ter no máximo 500 caracteres.");
+            .WithMessage(ValidacaoLancamento.DescricaoObrigatoria)
+            .MaximumLength(LancamentoLimites.DescricaoMaxLength)
+            .WithMessage(string.Format(ValidacaoLancamento.DescricaoTamanhoMaximo, LancamentoLimites.DescricaoMaxLength));
     }
 }
-

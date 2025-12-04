@@ -52,8 +52,8 @@ public class SaldoDiario
     public static SaldoDiario Vazio(DateTime data) => new()
     {
         Data = data.Date,
-        TotalCreditos = 0,
-        TotalDebitos = 0,
-        QuantidadeLancamentos = 0
+        TotalCreditos = DomainConstants.ValoresPadrao.Zero,
+        TotalDebitos = DomainConstants.ValoresPadrao.Zero,
+        QuantidadeLancamentos = DomainConstants.ValoresPadrao.QuantidadeZero
     };
 }

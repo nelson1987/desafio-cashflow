@@ -44,4 +44,3 @@ public class IntegrationTestCollection : ICollectionFixture<IntegrationTestFixtu
 {
     public const string Name = "IntegrationTests";
 }
-

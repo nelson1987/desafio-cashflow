@@ -4,6 +4,9 @@ using Cashflow.Application.DTOs;
 
 using Microsoft.Extensions.Logging;
 
+using static Cashflow.Application.ApplicationConstants;
+using static Cashflow.DomainConstants;
+
 namespace Cashflow.Application.Services;
 
 /// <summary>
@@ -32,7 +35,7 @@ public class ConsolidadoService : IConsolidadoService
 
             if (saldo is null)
             {
-                _logger.LogDebug("Saldo consolidado não encontrado para data: {Data}. Retornando saldo vazio.", data);
+                _logger.LogDebug(LogTemplates.SaldoNaoEncontrado, data);
                 return Result.Success(SaldoConsolidadoResponse.Vazio(data));
             }
 
@@ -40,8 +43,8 @@ public class ConsolidadoService : IConsolidadoService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erro ao obter saldo consolidado para data: {Data}", data);
-            return Result.Failure<SaldoConsolidadoResponse>("Ocorreu um erro ao buscar o saldo consolidado.");
+            _logger.LogError(ex, LogTemplates.ErroObterSaldoPorData, data);
+            return Result.Failure<SaldoConsolidadoResponse>(ErrosConsolidado.ErroAoBuscar);
         }
     }
 
@@ -53,13 +56,14 @@ public class ConsolidadoService : IConsolidadoService
         // Validação de período
         if (dataInicio > dataFim)
         {
-            return Result.Failure<RelatorioConsolidadoResponse>("A data inicial não pode ser maior que a data final.");
+            return Result.Failure<RelatorioConsolidadoResponse>(ErrosConsolidado.DataInicialMaiorQueFinal);
         }
 
-        // Limita período máximo de 90 dias
-        if ((dataFim - dataInicio).Days > 90)
+        // Limita período máximo
+        if ((dataFim - dataInicio).Days > Consolidacao.PeriodoMaximoDias)
         {
-            return Result.Failure<RelatorioConsolidadoResponse>("O período máximo permitido é de 90 dias.");
+            return Result.Failure<RelatorioConsolidadoResponse>(
+                string.Format(ErrosConsolidado.PeriodoMaximoExcedido, Consolidacao.PeriodoMaximoDias));
         }
 
         try
@@ -85,8 +89,8 @@ public class ConsolidadoService : IConsolidadoService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erro ao obter relatório consolidado. Período: {DataInicio} a {DataFim}", dataInicio, dataFim);
-            return Result.Failure<RelatorioConsolidadoResponse>("Ocorreu um erro ao gerar o relatório consolidado.");
+            _logger.LogError(ex, LogTemplates.ErroObterRelatorio, dataInicio, dataFim);
+            return Result.Failure<RelatorioConsolidadoResponse>(ErrosConsolidado.ErroAoGerarRelatorio);
         }
     }
 
@@ -96,12 +100,12 @@ public class ConsolidadoService : IConsolidadoService
     {
         try
         {
-            _logger.LogInformation("Iniciando recálculo do saldo consolidado para data: {Data}", data);
+            _logger.LogInformation(LogTemplates.IniciandoRecalculo, data);
 
             var saldo = await _repository.RecalcularAsync(data, cancellationToken);
 
             _logger.LogInformation(
-                "Saldo consolidado recalculado. Data: {Data}, Saldo: {Saldo}, Lançamentos: {Qtd}",
+                LogTemplates.SaldoRecalculado,
                 data,
                 saldo.Saldo,
                 saldo.QuantidadeLancamentos);
@@ -110,8 +114,8 @@ public class ConsolidadoService : IConsolidadoService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erro ao recalcular saldo consolidado para data: {Data}", data);
-            return Result.Failure<SaldoConsolidadoResponse>("Ocorreu um erro ao recalcular o saldo consolidado.");
+            _logger.LogError(ex, LogTemplates.ErroRecalcular, data);
+            return Result.Failure<SaldoConsolidadoResponse>(ErrosConsolidado.ErroAoRecalcular);
         }
     }
 
@@ -125,7 +129,7 @@ public class ConsolidadoService : IConsolidadoService
         var saldosPorData = saldosExistentes.ToDictionary(s => s.Data.Date);
         var resultado = new List<SaldoConsolidadoResponse>();
 
-        for (var data = dataInicio.Date; data <= dataFim.Date; data = data.AddDays(1))
+        for (var data = dataInicio.Date; data <= dataFim.Date; data = data.AddDays(Consolidacao.IncrementoDia))
         {
             if (saldosPorData.TryGetValue(data, out var saldo))
             {
@@ -148,10 +152,9 @@ public class ConsolidadoService : IConsolidadoService
             TotalDebitos = saldos.Sum(s => s.TotalDebitos),
             SaldoFinal = saldos.Sum(s => s.Saldo),
             TotalLancamentos = saldos.Sum(s => s.QuantidadeLancamentos),
-            DiasComMovimentacao = saldos.Count(s => s.QuantidadeLancamentos > 0)
+            DiasComMovimentacao = saldos.Count(s => s.QuantidadeLancamentos > ValoresPadrao.QuantidadeZero)
         };
     }
 
     #endregion
 }
-

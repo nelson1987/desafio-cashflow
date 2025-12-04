@@ -27,4 +27,3 @@ public interface ILancamentoService
     /// </summary>
     Task<Result<IEnumerable<LancamentoResponse>>> ObterPorDataAsync(DateTime data, CancellationToken cancellationToken = default);
 }
-

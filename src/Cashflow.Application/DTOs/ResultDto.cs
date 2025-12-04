@@ -43,4 +43,3 @@ public class Result<T> : Result
     public new static Result<T> Failure(string error) => new(false, default, error);
     public new static Result<T> Failure(IEnumerable<string> errors) => new(false, default, errors.FirstOrDefault(), errors);
 }
-

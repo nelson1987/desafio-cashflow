@@ -10,6 +10,8 @@ using Polly;
 using Polly.CircuitBreaker;
 using Polly.Retry;
 
+using static Cashflow.Infrastructure.InfrastructureConstants;
+
 namespace Cashflow.Infrastructure.Cache;
 
 /// <summary>
@@ -47,7 +49,7 @@ public class RedisCacheService : ICacheService
                 OnRetry = args =>
                 {
                     _logger.LogWarning(
-                        "Tentativa {Attempt} de acesso ao cache falhou. Tentando novamente em {Delay}ms",
+                        LogTemplates.RetryCache,
                         args.AttemptNumber + 1,
                         args.RetryDelay.TotalMilliseconds);
                     return ValueTask.CompletedTask;
@@ -62,13 +64,13 @@ public class RedisCacheService : ICacheService
                 OnOpened = args =>
                 {
                     _logger.LogWarning(
-                        "Circuit breaker ABERTO para o cache. Duração: {Duration}s",
+                        LogTemplates.CircuitBreakerAbertoCache,
                         circuitBreakerDuration.TotalSeconds);
                     return ValueTask.CompletedTask;
                 },
                 OnClosed = args =>
                 {
-                    _logger.LogInformation("Circuit breaker FECHADO para o cache");
+                    _logger.LogInformation(LogTemplates.CircuitBreakerFechadoCache);
                     return ValueTask.CompletedTask;
                 }
             })
@@ -94,7 +96,7 @@ public class RedisCacheService : ICacheService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erro ao obter valor do cache. Chave: {Chave}", chave);
+            _logger.LogError(ex, LogTemplates.ErroObterCache, chave);
             return null; // Fail gracefully - retorna null em caso de erro
         }
     }
@@ -117,7 +119,7 @@ public class RedisCacheService : ICacheService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erro ao definir valor no cache. Chave: {Chave}", chave);
+            _logger.LogError(ex, LogTemplates.ErroDefinirCache, chave);
             // Fail gracefully - não propaga erro para não impactar o fluxo principal
         }
     }
@@ -133,7 +135,7 @@ public class RedisCacheService : ICacheService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erro ao remover valor do cache. Chave: {Chave}", chave);
+            _logger.LogError(ex, LogTemplates.ErroRemoverCache, chave);
         }
     }
 
@@ -143,7 +145,7 @@ public class RedisCacheService : ICacheService
         // Para implementação real, seria necessário usar StackExchange.Redis diretamente
         // com SCAN e DEL ou usar um padrão de invalidação diferente
         _logger.LogWarning(
-            "RemoverPorPrefixoAsync não é suportado nativamente por IDistributedCache. Prefixo: {Prefixo}",
+            LogTemplates.RemoverPorPrefixoNaoSuportado,
             prefixo);
         await Task.CompletedTask;
     }
@@ -160,7 +162,7 @@ public class RedisCacheService : ICacheService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erro ao verificar existência no cache. Chave: {Chave}", chave);
+            _logger.LogError(ex, LogTemplates.ErroVerificarExistenciaCache, chave);
             return false;
         }
     }

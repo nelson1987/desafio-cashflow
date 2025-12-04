@@ -43,11 +43,11 @@ public class RabbitMqIntegrationTests : IAsyncLifetime
     public async Task PublishMessage_DevePersistirMensagemNaFila()
     {
         // Arrange
-        var message = new TestMessage 
-        { 
-            Id = Guid.NewGuid(), 
+        var message = new TestMessage
+        {
+            Id = Guid.NewGuid(),
             Content = "Teste de publicação",
-            Timestamp = DateTime.UtcNow 
+            Timestamp = DateTime.UtcNow
         };
 
         // Act
@@ -183,7 +183,7 @@ public class RabbitMqIntegrationTests : IAsyncLifetime
         {
             var id = Guid.NewGuid();
             mensagensPublicadas.Add(id);
-            
+
             tarefas.Add(_fixture.PublishMessageAsync("test.concurrent", new TestMessage
             {
                 Id = id,
@@ -297,13 +297,13 @@ public class RabbitMqIntegrationTests : IAsyncLifetime
         // Act
         var tcs = new TaskCompletionSource<TestMessage?>();
         var consumer = new AsyncEventingBasicConsumer(channel);
-        
+
         consumer.ReceivedAsync += async (model, ea) =>
         {
             var body = ea.Body.ToArray();
             var json = Encoding.UTF8.GetString(body);
             var receivedMessage = JsonSerializer.Deserialize<TestMessage>(json);
-            
+
             await channel.BasicAckAsync(ea.DeliveryTag, false);
             tcs.SetResult(receivedMessage);
         };

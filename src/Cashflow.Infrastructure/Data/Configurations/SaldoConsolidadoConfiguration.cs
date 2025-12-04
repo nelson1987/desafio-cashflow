@@ -3,6 +3,9 @@ using Cashflow.Infrastructure.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using static Cashflow.DomainConstants;
+using static Cashflow.Infrastructure.InfrastructureConstants;
+
 namespace Cashflow.Infrastructure.Data.Configurations;
 
 /// <summary>
@@ -12,35 +15,35 @@ public class SaldoConsolidadoConfiguration : IEntityTypeConfiguration<SaldoConso
 {
     public void Configure(EntityTypeBuilder<SaldoConsolidadoEntity> builder)
     {
-        builder.ToTable("saldos_consolidados");
+        builder.ToTable(Tables.SaldosConsolidados);
 
         builder.HasKey(e => e.Data);
 
         builder.Property(e => e.Data)
-            .HasColumnName("data")
-            .HasColumnType("date");
+            .HasColumnName(Columns.Data)
+            .HasColumnType(SqlDefaults.DateColumnType);
 
         builder.Property(e => e.TotalCreditos)
-            .HasColumnName("total_creditos")
-            .HasPrecision(18, 2)
-            .HasDefaultValue(0);
+            .HasColumnName(Columns.TotalCreditos)
+            .HasPrecision(ValoresMonetarios.Precisao, ValoresMonetarios.Escala)
+            .HasDefaultValue(ValoresPadrao.Zero);
 
         builder.Property(e => e.TotalDebitos)
-            .HasColumnName("total_debitos")
-            .HasPrecision(18, 2)
-            .HasDefaultValue(0);
+            .HasColumnName(Columns.TotalDebitos)
+            .HasPrecision(ValoresMonetarios.Precisao, ValoresMonetarios.Escala)
+            .HasDefaultValue(ValoresPadrao.Zero);
 
         builder.Property(e => e.Saldo)
-            .HasColumnName("saldo")
-            .HasPrecision(18, 2)
-            .HasDefaultValue(0);
+            .HasColumnName(Columns.Saldo)
+            .HasPrecision(ValoresMonetarios.Precisao, ValoresMonetarios.Escala)
+            .HasDefaultValue(ValoresPadrao.Zero);
 
         builder.Property(e => e.QuantidadeLancamentos)
-            .HasColumnName("quantidade_lancamentos")
-            .HasDefaultValue(0);
+            .HasColumnName(Columns.QuantidadeLancamentos)
+            .HasDefaultValue(ValoresPadrao.QuantidadeZero);
 
         builder.Property(e => e.ProcessadoEm)
-            .HasColumnName("processado_em")
-            .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            .HasColumnName(Columns.ProcessadoEm)
+            .HasDefaultValueSql(SqlDefaults.CurrentTimestamp);
     }
 }

@@ -1,12 +1,16 @@
 using System.Text;
 using System.Text.Json;
 
+using Cashflow.Infrastructure.Configuration;
+
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+
+using static Cashflow.Infrastructure.InfrastructureConstants;
 
 namespace Cashflow.Infrastructure.Messaging;
 
@@ -57,7 +61,7 @@ public abstract class RabbitMqConsumerBase<TMessage> : BackgroundService where T
                 if (message != null)
                 {
                     Logger.LogDebug(
-                        "Mensagem recebida. Queue: {Queue}, MessageId: {MessageId}",
+                        LogTemplates.MensagemRecebida,
                         QueueName,
                         ea.BasicProperties?.MessageId);
 
@@ -69,7 +73,7 @@ public abstract class RabbitMqConsumerBase<TMessage> : BackgroundService where T
                 else
                 {
                     Logger.LogWarning(
-                        "Mensagem deserializada como null. Queue: {Queue}",
+                        LogTemplates.MensagemDeserializadaNull,
                         QueueName);
 
                     // Rejeita a mensagem sem requeue
@@ -79,7 +83,7 @@ public abstract class RabbitMqConsumerBase<TMessage> : BackgroundService where T
             catch (Exception ex)
             {
                 Logger.LogError(ex,
-                    "Erro ao processar mensagem. Queue: {Queue}, Body: {Body}",
+                    LogTemplates.ErroProcessarMensagem,
                     QueueName,
                     messageJson);
 
@@ -94,12 +98,12 @@ public abstract class RabbitMqConsumerBase<TMessage> : BackgroundService where T
             consumer: consumer,
             cancellationToken: stoppingToken);
 
-        Logger.LogInformation("Consumidor iniciado. Queue: {Queue}", QueueName);
+        Logger.LogInformation(LogTemplates.ConsumidorIniciado, QueueName);
 
         // Mantém o serviço rodando
         while (!stoppingToken.IsCancellationRequested)
         {
-            await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
+            await Task.Delay(TimeSpan.FromSeconds(InfrastructureSettings.RabbitMq.ConsumerLoopDelaySeconds), stoppingToken);
         }
     }
 
@@ -120,7 +124,11 @@ public abstract class RabbitMqConsumerBase<TMessage> : BackgroundService where T
         _channel = await _connection.CreateChannelAsync(cancellationToken: cancellationToken);
 
         // Configura prefetch para processar uma mensagem por vez
-        await _channel.BasicQosAsync(prefetchSize: 0, prefetchCount: 1, global: false, cancellationToken);
+        await _channel.BasicQosAsync(
+            prefetchSize: InfrastructureSettings.RabbitMq.PrefetchSize,
+            prefetchCount: InfrastructureSettings.RabbitMq.PrefetchCount,
+            global: false,
+            cancellationToken);
 
         // Declara a exchange
         await _channel.ExchangeDeclareAsync(
@@ -138,8 +146,8 @@ public abstract class RabbitMqConsumerBase<TMessage> : BackgroundService where T
             autoDelete: false,
             arguments: new Dictionary<string, object?>
             {
-                { "x-dead-letter-exchange", $"{Settings.Exchange}.dlx" },
-                { "x-dead-letter-routing-key", $"{RoutingKey}.dead" }
+                { RabbitMqQueueArguments.DeadLetterExchange, $"{Settings.Exchange}{RabbitMqDefaults.DeadLetterExchangeSuffix}" },
+                { RabbitMqQueueArguments.DeadLetterRoutingKey, $"{RoutingKey}{RabbitMqDefaults.DeadLetterRoutingKeySuffix}" }
             },
             cancellationToken: cancellationToken);
 
@@ -151,7 +159,7 @@ public abstract class RabbitMqConsumerBase<TMessage> : BackgroundService where T
             cancellationToken: cancellationToken);
 
         Logger.LogInformation(
-            "Fila configurada. Queue: {Queue}, RoutingKey: {RoutingKey}",
+            LogTemplates.FilaConfigurada,
             QueueName,
             RoutingKey);
     }
@@ -163,7 +171,7 @@ public abstract class RabbitMqConsumerBase<TMessage> : BackgroundService where T
 
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
-        Logger.LogInformation("Parando consumidor. Queue: {Queue}", QueueName);
+        Logger.LogInformation(LogTemplates.ParandoConsumidor, QueueName);
 
         if (_channel != null)
         {

@@ -260,4 +260,3 @@ public class RedisCacheServiceTests : IAsyncLifetime
         public string Nome { get; set; } = string.Empty;
     }
 }
-

@@ -6,6 +6,37 @@ namespace Cashflow.Infrastructure.Configuration;
 public static class InfrastructureSettings
 {
     /// <summary>
+    /// Constantes do RabbitMQ
+    /// </summary>
+    public static class RabbitMq
+    {
+        /// <summary>
+        /// Porta padrão do RabbitMQ
+        /// </summary>
+        public const int PortaPadrao = 5672;
+
+        /// <summary>
+        /// Intervalo padrão de recuperação de rede em segundos
+        /// </summary>
+        public const int NetworkRecoveryIntervalPadrao = 10;
+
+        /// <summary>
+        /// Delay de loop do consumer em segundos
+        /// </summary>
+        public const int ConsumerLoopDelaySeconds = 1;
+
+        /// <summary>
+        /// Prefetch size padrão (0 = sem limite)
+        /// </summary>
+        public const uint PrefetchSize = 0;
+
+        /// <summary>
+        /// Prefetch count padrão (mensagens processadas por vez)
+        /// </summary>
+        public const ushort PrefetchCount = 1;
+    }
+
+    /// <summary>
     /// Configurações de resiliência (Polly)
     /// </summary>
     public static class Resilience
@@ -80,6 +111,11 @@ public static class InfrastructureSettings
         /// Prefixo para chaves de cache no Redis
         /// </summary>
         public static string InstanceName { get; set; } = "Cashflow:";
+
+        /// <summary>
+        /// Connection string padrão do Redis
+        /// </summary>
+        public const string ConnectionStringPadrao = "localhost:6379";
     }
 
     /// <summary>

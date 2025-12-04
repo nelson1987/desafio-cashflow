@@ -3,6 +3,9 @@ using Cashflow.Infrastructure.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using static Cashflow.DomainConstants;
+using static Cashflow.Infrastructure.InfrastructureConstants;
+
 namespace Cashflow.Infrastructure.Data.Configurations;
 
 /// <summary>
@@ -12,48 +15,48 @@ public class LancamentoConfiguration : IEntityTypeConfiguration<LancamentoEntity
 {
     public void Configure(EntityTypeBuilder<LancamentoEntity> builder)
     {
-        builder.ToTable("lancamentos");
+        builder.ToTable(Tables.Lancamentos);
 
         builder.HasKey(e => e.Id);
 
         builder.Property(e => e.Id)
-            .HasColumnName("id")
-            .HasDefaultValueSql("uuid_generate_v4()");
+            .HasColumnName(Columns.Id)
+            .HasDefaultValueSql(SqlDefaults.UuidGenerateV4);
 
         builder.Property(e => e.Valor)
-            .HasColumnName("valor")
-            .HasPrecision(18, 2)
+            .HasColumnName(Columns.Valor)
+            .HasPrecision(ValoresMonetarios.Precisao, ValoresMonetarios.Escala)
             .IsRequired();
 
         builder.Property(e => e.Tipo)
-            .HasColumnName("tipo")
+            .HasColumnName(Columns.Tipo)
             .IsRequired();
 
         builder.Property(e => e.Data)
-            .HasColumnName("data")
+            .HasColumnName(Columns.Data)
             .IsRequired();
 
         builder.Property(e => e.Descricao)
-            .HasColumnName("descricao")
-            .HasMaxLength(500)
+            .HasColumnName(Columns.Descricao)
+            .HasMaxLength(LancamentoLimites.DescricaoMaxLength)
             .IsRequired();
 
         builder.Property(e => e.CreatedAt)
-            .HasColumnName("created_at")
-            .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            .HasColumnName(Columns.CreatedAt)
+            .HasDefaultValueSql(SqlDefaults.CurrentTimestamp);
 
         builder.Property(e => e.UpdatedAt)
-            .HasColumnName("updated_at")
-            .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            .HasColumnName(Columns.UpdatedAt)
+            .HasDefaultValueSql(SqlDefaults.CurrentTimestamp);
 
         // Índices
         builder.HasIndex(e => e.Data)
-            .HasDatabaseName("idx_lancamentos_data");
+            .HasDatabaseName(Indexes.LancamentosData);
 
         builder.HasIndex(e => e.Tipo)
-            .HasDatabaseName("idx_lancamentos_tipo");
+            .HasDatabaseName(Indexes.LancamentosTipo);
 
         builder.HasIndex(e => new { e.Data, e.Tipo })
-            .HasDatabaseName("idx_lancamentos_data_tipo");
+            .HasDatabaseName(Indexes.LancamentosDataTipo);
     }
 }

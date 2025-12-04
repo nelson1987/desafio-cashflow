@@ -22,4 +22,3 @@ public interface IConsolidadoService
     /// </summary>
     Task<Result<SaldoConsolidadoResponse>> RecalcularAsync(DateTime data, CancellationToken cancellationToken = default);
 }
-

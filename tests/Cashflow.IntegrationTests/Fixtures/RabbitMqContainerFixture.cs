@@ -46,7 +46,7 @@ public class RabbitMqContainerFixture : IAsyncLifetime
     public async Task InitializeAsync()
     {
         await _container.StartAsync();
-        
+
         var factory = new ConnectionFactory
         {
             HostName = Host,
@@ -141,7 +141,7 @@ public class RabbitMqContainerFixture : IAsyncLifetime
             var body = ea.Body.ToArray();
             var json = Encoding.UTF8.GetString(body);
             var message = JsonSerializer.Deserialize<T>(json);
-            
+
             await _channel.BasicAckAsync(ea.DeliveryTag, false);
             tcs.TrySetResult(message);
         };
@@ -182,4 +182,3 @@ public class RabbitMqCollection : ICollectionFixture<RabbitMqContainerFixture>
 {
     public const string Name = "RabbitMQ";
 }
-

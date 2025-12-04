@@ -4,6 +4,8 @@ using Cashflow.Infrastructure.Configuration;
 
 using Microsoft.Extensions.Logging;
 
+using static Cashflow.Infrastructure.InfrastructureConstants;
+
 namespace Cashflow.Infrastructure.Repositories;
 
 /// <summary>
@@ -54,7 +56,7 @@ public class CachedSaldoConsolidadoRepository : ISaldoConsolidadoRepository
         var cacheKey = CacheKeys.SaldoConsolidado(saldoDiario.Data);
         await _cache.DefinirAsync(cacheKey, saldoDiario, CacheTtl, cancellationToken);
 
-        _logger.LogDebug("Cache atualizado para saldo do dia {Data}", saldoDiario.Data.ToShortDateString());
+        _logger.LogDebug(LogTemplates.CacheAtualizado, saldoDiario.Data.ToShortDateString());
     }
 
     public async Task<SaldoDiario> RecalcularAsync(DateTime data, CancellationToken cancellationToken = default)
@@ -69,7 +71,7 @@ public class CachedSaldoConsolidadoRepository : ISaldoConsolidadoRepository
         // Atualiza o cache com o novo valor
         await _cache.DefinirAsync(cacheKey, saldo, CacheTtl, cancellationToken);
 
-        _logger.LogInformation("Saldo recalculado e cache atualizado para {Data}", data.ToShortDateString());
+        _logger.LogInformation(LogTemplates.SaldoRecalculadoCacheAtualizado, data.ToShortDateString());
 
         return saldo;
     }

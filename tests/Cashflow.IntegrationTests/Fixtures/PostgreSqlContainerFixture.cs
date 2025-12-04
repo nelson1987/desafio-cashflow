@@ -30,7 +30,7 @@ public class PostgreSqlContainerFixture : IAsyncLifetime
     public async Task InitializeAsync()
     {
         await _container.StartAsync();
-        
+
         // Cria o schema e tabelas
         await using var context = CreateDbContext();
         await context.Database.EnsureCreatedAsync();
@@ -110,4 +110,3 @@ public class PostgreSqlCollection : ICollectionFixture<PostgreSqlContainerFixtur
 {
     public const string Name = "PostgreSQL";
 }
-

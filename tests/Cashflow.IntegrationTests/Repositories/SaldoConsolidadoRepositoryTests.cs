@@ -176,11 +176,11 @@ public class SaldoConsolidadoRepositoryTests : IAsyncLifetime
 
         // Assert
         var resultado = (await _repository.ObterPorPeriodoAsync(
-            dataBase, 
+            dataBase,
             dataBase.AddDays(29))).ToList();
 
         resultado.Count.ShouldBe(30);
-        
+
         // Verifica o primeiro e o último
         var primeiro = resultado.First();
         primeiro.TotalCreditos.ShouldBe(1000m);
@@ -191,4 +191,3 @@ public class SaldoConsolidadoRepositoryTests : IAsyncLifetime
         ultimo.TotalDebitos.ShouldBe(1850m);   // 400 + 29*50
     }
 }
-
