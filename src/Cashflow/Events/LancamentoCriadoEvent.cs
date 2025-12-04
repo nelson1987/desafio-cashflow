@@ -40,5 +40,3 @@ public record LancamentoCriadoEvent
         Valor = lancamento.Valor;
     }
 }
-
-

@@ -1,4 +1,5 @@
 using Cashflow.Infrastructure.Data.Entities;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -56,5 +57,3 @@ public class LancamentoConfiguration : IEntityTypeConfiguration<LancamentoEntity
             .HasDatabaseName("idx_lancamentos_data_tipo");
     }
 }
-
-

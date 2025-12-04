@@ -35,5 +35,3 @@ public interface ILancamentoRepository
     /// </summary>
     Task<int> ContarAsync(CancellationToken cancellationToken = default);
 }
-
-

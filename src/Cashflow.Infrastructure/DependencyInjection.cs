@@ -4,9 +4,11 @@ using Cashflow.Infrastructure.Configuration;
 using Cashflow.Infrastructure.Data;
 using Cashflow.Infrastructure.Messaging;
 using Cashflow.Infrastructure.Repositories;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+
 using RabbitMQ.Client;
 
 namespace Cashflow.Infrastructure;
@@ -46,7 +48,7 @@ public static class DependencyInjection
                     maxRetryCount: InfrastructureSettings.Database.MaxRetryCount,
                     maxRetryDelay: TimeSpan.FromSeconds(InfrastructureSettings.Database.MaxRetryDelaySeconds),
                     errorCodesToAdd: null);
-                
+
                 npgsqlOptions.CommandTimeout(InfrastructureSettings.Database.CommandTimeoutSeconds);
             });
         });
@@ -78,32 +80,32 @@ public static class DependencyInjection
         services.Configure<RabbitMqSettings>(opts =>
         {
             var section = configuration.GetSection(RabbitMqSettings.SectionName);
-            
-            opts.Host = section["Host"] 
-                ?? Environment.GetEnvironmentVariable("RABBITMQ_HOST") 
+
+            opts.Host = section["Host"]
+                ?? Environment.GetEnvironmentVariable("RABBITMQ_HOST")
                 ?? "localhost";
-            opts.Port = int.TryParse(section["Port"] ?? Environment.GetEnvironmentVariable("RABBITMQ_PORT"), out var port) 
+            opts.Port = int.TryParse(section["Port"] ?? Environment.GetEnvironmentVariable("RABBITMQ_PORT"), out var port)
                 ? port : 5672;
-            opts.Username = section["Username"] 
-                ?? Environment.GetEnvironmentVariable("RABBITMQ_USER") 
+            opts.Username = section["Username"]
+                ?? Environment.GetEnvironmentVariable("RABBITMQ_USER")
                 ?? "guest";
-            opts.Password = section["Password"] 
-                ?? Environment.GetEnvironmentVariable("RABBITMQ_PASSWORD") 
+            opts.Password = section["Password"]
+                ?? Environment.GetEnvironmentVariable("RABBITMQ_PASSWORD")
                 ?? "guest";
-            opts.VirtualHost = section["VirtualHost"] 
-                ?? Environment.GetEnvironmentVariable("RABBITMQ_VHOST") 
+            opts.VirtualHost = section["VirtualHost"]
+                ?? Environment.GetEnvironmentVariable("RABBITMQ_VHOST")
                 ?? "/";
-            opts.Exchange = section["Exchange"] 
-                ?? Environment.GetEnvironmentVariable("RABBITMQ_EXCHANGE") 
+            opts.Exchange = section["Exchange"]
+                ?? Environment.GetEnvironmentVariable("RABBITMQ_EXCHANGE")
                 ?? "cashflow.events";
-            opts.ExchangeType = section["ExchangeType"] 
-                ?? Environment.GetEnvironmentVariable("RABBITMQ_EXCHANGE_TYPE") 
+            opts.ExchangeType = section["ExchangeType"]
+                ?? Environment.GetEnvironmentVariable("RABBITMQ_EXCHANGE_TYPE")
                 ?? "topic";
             opts.AutomaticRecoveryEnabled = bool.TryParse(
-                section["AutomaticRecoveryEnabled"] ?? Environment.GetEnvironmentVariable("RABBITMQ_AUTOMATIC_RECOVERY"), 
+                section["AutomaticRecoveryEnabled"] ?? Environment.GetEnvironmentVariable("RABBITMQ_AUTOMATIC_RECOVERY"),
                 out var autoRecovery) ? autoRecovery : true;
             opts.NetworkRecoveryInterval = int.TryParse(
-                section["NetworkRecoveryInterval"] ?? Environment.GetEnvironmentVariable("RABBITMQ_NETWORK_RECOVERY_INTERVAL"), 
+                section["NetworkRecoveryInterval"] ?? Environment.GetEnvironmentVariable("RABBITMQ_NETWORK_RECOVERY_INTERVAL"),
                 out var interval) ? interval : 10;
         });
 
@@ -125,7 +127,7 @@ public static class DependencyInjection
         // Health check do PostgreSQL
         var postgresConnection = configuration.GetConnectionString("PostgreSQL")
             ?? Environment.GetEnvironmentVariable("CONNECTION_STRING_POSTGRESQL");
-        
+
         if (!string.IsNullOrEmpty(postgresConnection))
         {
             healthChecks.AddNpgSql(
@@ -137,7 +139,7 @@ public static class DependencyInjection
         // Health check do Redis
         var redisConnection = configuration.GetConnectionString("Redis")
             ?? Environment.GetEnvironmentVariable("CONNECTION_STRING_REDIS");
-        
+
         if (!string.IsNullOrEmpty(redisConnection))
         {
             healthChecks.AddRedis(
@@ -147,9 +149,9 @@ public static class DependencyInjection
         }
 
         // Health check do RabbitMQ
-        var rabbitHost = configuration.GetSection("RabbitMQ:Host").Value 
+        var rabbitHost = configuration.GetSection("RabbitMQ:Host").Value
             ?? Environment.GetEnvironmentVariable("RABBITMQ_HOST");
-        
+
         if (!string.IsNullOrEmpty(rabbitHost))
         {
             healthChecks.AddRabbitMQ(sp =>
@@ -158,17 +160,17 @@ public static class DependencyInjection
                 {
                     HostName = rabbitHost,
                     Port = int.TryParse(
-                        configuration.GetSection("RabbitMQ:Port").Value 
-                        ?? Environment.GetEnvironmentVariable("RABBITMQ_PORT"), 
+                        configuration.GetSection("RabbitMQ:Port").Value
+                        ?? Environment.GetEnvironmentVariable("RABBITMQ_PORT"),
                         out var port) ? port : 5672,
-                    UserName = configuration.GetSection("RabbitMQ:Username").Value 
-                        ?? Environment.GetEnvironmentVariable("RABBITMQ_USER") 
+                    UserName = configuration.GetSection("RabbitMQ:Username").Value
+                        ?? Environment.GetEnvironmentVariable("RABBITMQ_USER")
                         ?? "guest",
-                    Password = configuration.GetSection("RabbitMQ:Password").Value 
-                        ?? Environment.GetEnvironmentVariable("RABBITMQ_PASSWORD") 
+                    Password = configuration.GetSection("RabbitMQ:Password").Value
+                        ?? Environment.GetEnvironmentVariable("RABBITMQ_PASSWORD")
                         ?? "guest",
-                    VirtualHost = configuration.GetSection("RabbitMQ:VirtualHost").Value 
-                        ?? Environment.GetEnvironmentVariable("RABBITMQ_VHOST") 
+                    VirtualHost = configuration.GetSection("RabbitMQ:VirtualHost").Value
+                        ?? Environment.GetEnvironmentVariable("RABBITMQ_VHOST")
                         ?? "/"
                 };
                 return factory.CreateConnectionAsync().GetAwaiter().GetResult();

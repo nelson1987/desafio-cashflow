@@ -75,4 +75,3 @@ public class FluxoCaixa
         return _lancamentos.Where(l => l.EhDoDia(data));
     }
 }
-

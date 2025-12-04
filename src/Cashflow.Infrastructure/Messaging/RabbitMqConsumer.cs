@@ -1,8 +1,10 @@
 using System.Text;
 using System.Text.Json;
+
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -42,7 +44,7 @@ public abstract class RabbitMqConsumerBase<TMessage> : BackgroundService where T
         await InitializeAsync(stoppingToken);
 
         var consumer = new AsyncEventingBasicConsumer(_channel!);
-        
+
         consumer.ReceivedAsync += async (_, ea) =>
         {
             var body = ea.Body.ToArray();
@@ -51,7 +53,7 @@ public abstract class RabbitMqConsumerBase<TMessage> : BackgroundService where T
             try
             {
                 var message = JsonSerializer.Deserialize<TMessage>(messageJson, JsonOptions);
-                
+
                 if (message != null)
                 {
                     Logger.LogDebug(
@@ -69,7 +71,7 @@ public abstract class RabbitMqConsumerBase<TMessage> : BackgroundService where T
                     Logger.LogWarning(
                         "Mensagem deserializada como null. Queue: {Queue}",
                         QueueName);
-                    
+
                     // Rejeita a mensagem sem requeue
                     await _channel!.BasicNackAsync(ea.DeliveryTag, multiple: false, requeue: false, stoppingToken);
                 }
@@ -178,4 +180,3 @@ public abstract class RabbitMqConsumerBase<TMessage> : BackgroundService where T
         await base.StopAsync(cancellationToken);
     }
 }
-

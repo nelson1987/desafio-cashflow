@@ -15,4 +15,3 @@ public enum TipoLancamento
     /// </summary>
     Debito = 2
 }
-

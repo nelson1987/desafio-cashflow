@@ -108,4 +108,3 @@ public class SaldoDiarioTests
             new SaldoDiario(DateTime.Today, null!));
     }
 }
-

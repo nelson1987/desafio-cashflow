@@ -1,12 +1,16 @@
 using System.Text;
 using System.Text.Json;
+
 using Cashflow.Abstractions;
 using Cashflow.Infrastructure.Configuration;
+
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+
 using Polly;
 using Polly.CircuitBreaker;
 using Polly.Retry;
+
 using RabbitMQ.Client;
 
 namespace Cashflow.Infrastructure.Messaging;

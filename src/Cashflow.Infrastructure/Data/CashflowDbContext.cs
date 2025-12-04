@@ -1,4 +1,5 @@
 using Cashflow.Infrastructure.Data.Entities;
+
 using Microsoft.EntityFrameworkCore;
 
 namespace Cashflow.Infrastructure.Data;
@@ -33,5 +34,3 @@ public class CashflowDbContext : DbContext
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(CashflowDbContext).Assembly);
     }
 }
-
-

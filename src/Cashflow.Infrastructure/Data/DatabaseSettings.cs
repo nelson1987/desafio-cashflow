@@ -32,5 +32,3 @@ public class DatabaseSettings
     /// </summary>
     public int MaxRetryDelay { get; set; } = 30;
 }
-
-

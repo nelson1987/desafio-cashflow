@@ -160,4 +160,3 @@ public class FluxoCaixaTests
         lancamentosHoje.ShouldAllBe(l => l.EhDoDia(hoje));
     }
 }
-

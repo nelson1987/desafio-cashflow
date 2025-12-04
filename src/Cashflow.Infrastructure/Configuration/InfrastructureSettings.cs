@@ -149,5 +149,3 @@ public static class InfrastructureSettings
         return string.IsNullOrEmpty(value) ? defaultValue : value;
     }
 }
-
-

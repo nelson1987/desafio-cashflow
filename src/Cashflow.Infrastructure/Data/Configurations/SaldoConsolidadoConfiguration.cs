@@ -1,4 +1,5 @@
 using Cashflow.Infrastructure.Data.Entities;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -43,5 +44,3 @@ public class SaldoConsolidadoConfiguration : IEntityTypeConfiguration<SaldoConso
             .HasDefaultValueSql("CURRENT_TIMESTAMP");
     }
 }
-
-

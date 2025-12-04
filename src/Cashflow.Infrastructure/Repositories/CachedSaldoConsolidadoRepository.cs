@@ -1,6 +1,7 @@
 using Cashflow.Abstractions;
 using Cashflow.Infrastructure.Cache;
 using Cashflow.Infrastructure.Configuration;
+
 using Microsoft.Extensions.Logging;
 
 namespace Cashflow.Infrastructure.Repositories;

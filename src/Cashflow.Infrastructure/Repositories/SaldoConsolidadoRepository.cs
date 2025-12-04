@@ -1,6 +1,7 @@
 using Cashflow.Abstractions;
 using Cashflow.Infrastructure.Data;
 using Cashflow.Infrastructure.Data.Entities;
+
 using Microsoft.EntityFrameworkCore;
 
 namespace Cashflow.Infrastructure.Repositories;
@@ -89,7 +90,7 @@ public class SaldoConsolidadoRepository : ISaldoConsolidadoRepository
 
         // Cria o saldo diário
         var saldoDiario = SaldoDiario.Vazio(data);
-        
+
         // Usa reflection para definir os valores
         var tipoSaldo = typeof(SaldoDiario);
         tipoSaldo.GetProperty(nameof(SaldoDiario.TotalCreditos))?.SetValue(saldoDiario, totalCreditos);
@@ -102,5 +103,3 @@ public class SaldoConsolidadoRepository : ISaldoConsolidadoRepository
         return saldoDiario;
     }
 }
-
-

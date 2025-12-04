@@ -11,7 +11,7 @@ public class Lancamento
     public DateTime Data { get; private set; }
     public string Descricao { get; private set; }
 
-    private Lancamento() 
+    private Lancamento()
     {
         Descricao = string.Empty;
     }
@@ -50,4 +50,3 @@ public class Lancamento
             throw new ArgumentException("A descrição do lançamento é obrigatória.", nameof(descricao));
     }
 }
-

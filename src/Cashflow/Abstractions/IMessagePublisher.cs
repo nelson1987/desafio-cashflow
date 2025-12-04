@@ -15,5 +15,3 @@ public interface IMessagePublisher
     /// </summary>
     Task PublicarAsync<T>(string topico, T mensagem, CancellationToken cancellationToken = default) where T : class;
 }
-
-

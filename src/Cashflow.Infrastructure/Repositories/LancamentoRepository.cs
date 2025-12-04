@@ -1,6 +1,7 @@
 using Cashflow.Abstractions;
 using Cashflow.Infrastructure.Data;
 using Cashflow.Infrastructure.Data.Entities;
+
 using Microsoft.EntityFrameworkCore;
 
 namespace Cashflow.Infrastructure.Repositories;
@@ -57,7 +58,7 @@ public class LancamentoRepository : ILancamentoRepository
     public async Task<Lancamento> AdicionarAsync(Lancamento lancamento, CancellationToken cancellationToken = default)
     {
         var entity = LancamentoEntity.FromDomain(lancamento);
-        
+
         _context.Lancamentos.Add(entity);
         await _context.SaveChangesAsync(cancellationToken);
 
@@ -82,5 +83,3 @@ public class LancamentoRepository : ILancamentoRepository
         return await _context.Lancamentos.CountAsync(cancellationToken);
     }
 }
-
-

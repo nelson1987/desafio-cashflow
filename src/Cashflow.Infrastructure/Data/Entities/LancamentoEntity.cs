@@ -21,7 +21,7 @@ public class LancamentoEntity
         // Usa reflection para criar o lançamento sem passar pelo construtor
         // pois o domínio já foi validado quando foi persistido
         var lancamento = (Lancamento)Activator.CreateInstance(typeof(Lancamento), nonPublic: true)!;
-        
+
         var idProperty = typeof(Lancamento).GetProperty(nameof(Lancamento.Id));
         var valorProperty = typeof(Lancamento).GetProperty(nameof(Lancamento.Valor));
         var tipoProperty = typeof(Lancamento).GetProperty(nameof(Lancamento.Tipo));
@@ -54,5 +54,3 @@ public class LancamentoEntity
         };
     }
 }
-
-

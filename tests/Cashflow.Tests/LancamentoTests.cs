@@ -108,4 +108,3 @@ public class LancamentoTests
         lancamento.EhDoDia(new DateTime(2024, 1, 16)).ShouldBeFalse();
     }
 }
-

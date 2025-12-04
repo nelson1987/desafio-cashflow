@@ -46,7 +46,7 @@ public static class EnvironmentLoader
 
             // Carrega as configurações das variáveis de ambiente
             InfrastructureSettings.LoadFromEnvironment();
-            
+
             _loaded = true;
         }
         catch (Exception ex)
@@ -81,5 +81,3 @@ public static class EnvironmentLoader
         return bool.TryParse(value, out var result) ? result : defaultValue;
     }
 }
-
-

@@ -19,7 +19,7 @@ public class SaldoConsolidadoEntity
     {
         // Usa reflection para criar o SaldoDiario sem passar pelo construtor
         var saldo = (SaldoDiario)Activator.CreateInstance(typeof(SaldoDiario), nonPublic: true)!;
-        
+
         var dataProperty = typeof(SaldoDiario).GetProperty(nameof(SaldoDiario.Data));
         var totalCreditosProperty = typeof(SaldoDiario).GetProperty(nameof(SaldoDiario.TotalCreditos));
         var totalDebitosProperty = typeof(SaldoDiario).GetProperty(nameof(SaldoDiario.TotalDebitos));
@@ -49,5 +49,3 @@ public class SaldoConsolidadoEntity
         };
     }
 }
-
-

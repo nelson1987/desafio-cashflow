@@ -1,8 +1,11 @@
 using System.Text.Json;
+
 using Cashflow.Abstractions;
 using Cashflow.Infrastructure.Configuration;
+
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
+
 using Polly;
 using Polly.CircuitBreaker;
 using Polly.Retry;
@@ -82,7 +85,7 @@ public class RedisCacheService : ICacheService
             return await _resiliencePipeline.ExecuteAsync(async ct =>
             {
                 var bytes = await _cache.GetAsync(chave, ct);
-                
+
                 if (bytes == null || bytes.Length == 0)
                     return null;
 
@@ -103,7 +106,7 @@ public class RedisCacheService : ICacheService
             await _resiliencePipeline.ExecuteAsync(async ct =>
             {
                 var bytes = JsonSerializer.SerializeToUtf8Bytes(valor, _jsonOptions);
-                
+
                 var options = new DistributedCacheEntryOptions
                 {
                     AbsoluteExpirationRelativeToNow = ttl ?? DefaultTtl
@@ -175,7 +178,7 @@ public class RedisCacheService : ICacheService
 
         // Se não encontrou, executa a factory
         var valor = await factory();
-        
+
         if (valor != null)
         {
             await DefinirAsync(chave, valor, ttl, cancellationToken);
@@ -191,10 +194,10 @@ public class RedisCacheService : ICacheService
 public static class CacheKeys
 {
     public const string SaldoConsolidadoPrefix = "saldo:consolidado:";
-    
+
     public static string SaldoConsolidado(DateTime data) => $"{SaldoConsolidadoPrefix}{data:yyyy-MM-dd}";
-    
+
     public static string Lancamento(Guid id) => $"lancamento:{id}";
-    
+
     public static string LancamentosDoDia(DateTime data) => $"lancamentos:dia:{data:yyyy-MM-dd}";
 }
