@@ -17,6 +17,17 @@ public class SaldoDiario
 
     private SaldoDiario() { }
 
+    /// <summary>
+    /// Construtor para criação direta com valores (usado em testes e reconstrução de persistência)
+    /// </summary>
+    public SaldoDiario(DateTime data, decimal totalCreditos, decimal totalDebitos, int quantidadeLancamentos)
+    {
+        Data = data.Date;
+        TotalCreditos = totalCreditos;
+        TotalDebitos = totalDebitos;
+        QuantidadeLancamentos = quantidadeLancamentos;
+    }
+
     public SaldoDiario(DateTime data, IEnumerable<Lancamento> lancamentos)
     {
         ArgumentNullException.ThrowIfNull(lancamentos);
