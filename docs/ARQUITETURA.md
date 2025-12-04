@@ -4,6 +4,8 @@ Este documento explica as decisões arquiteturais do projeto Cashflow e os motiv
 
 ## 📐 Visão Geral da Arquitetura
 
+### Arquitetura Atual (Domínio)
+
 ```mermaid
 flowchart TB
     subgraph Solution["📦 Cashflow.sln"]
@@ -19,7 +21,166 @@ flowchart TB
     CashflowTests -->|referencia| Cashflow
 ```
 
-## 🤔 Por que essa estrutura?
+### Arquitetura de Produção (Planejada)
+
+A arquitetura de produção foi definida com base nos seguintes **requisitos não-funcionais**:
+
+| Requisito | Descrição |
+|-----------|-----------|
+| **Resiliência** | Serviço de lançamentos não pode ficar indisponível se o consolidado cair |
+| **Throughput** | 50 requisições/segundo no pico (consolidado) |
+| **Tolerância a falhas** | Máximo 5% de perda de requisições |
+| **Escalabilidade** | Escalar horizontalmente quando necessário |
+
+---
+
+## 🎯 Arquitetura Escolhida: Fila de Mensagens
+
+Após análise de alternativas, a **Arquitetura com Fila de Mensagens** foi escolhida por oferecer o melhor equilíbrio entre resiliência, escalabilidade e complexidade.
+
+### Diagrama da Arquitetura
+
+```mermaid
+flowchart TB
+    subgraph GCP["☁️ Google Cloud Platform"]
+        subgraph Network["Rede"]
+            LB["⚖️ Cloud Load Balancer"]
+        end
+        
+        subgraph GKE["🐳 GKE Autopilot"]
+            subgraph APIService["API Service (Auto-Scale)"]
+                API["📥 Cashflow API<br/>(Stateless)"]
+            end
+            
+            subgraph WorkerService["Worker Service (Auto-Scale)"]
+                Worker["⚙️ Consolidation Worker"]
+            end
+        end
+        
+        subgraph Messaging["Mensageria"]
+            PubSub["📨 Cloud Pub/Sub"]
+        end
+        
+        subgraph Database["Banco de Dados"]
+            CloudSQL["🗄️ Cloud SQL<br/>(PostgreSQL)"]
+        end
+        
+        subgraph Cache["Cache"]
+            Memorystore["⚡ Memorystore<br/>(Redis)"]
+        end
+    end
+    
+    Users["👥 Usuários"] --> LB
+    LB --> API
+    API -->|Escrita| CloudSQL
+    API -->|Publica evento| PubSub
+    API -->|Lê consolidado| Memorystore
+    
+    PubSub --> Worker
+    Worker -->|Processa| CloudSQL
+    Worker -->|Atualiza cache| Memorystore
+```
+
+### Por que essa arquitetura?
+
+| Critério | Benefício |
+|----------|-----------|
+| **Desacoplamento** | Lançamentos e Consolidado são independentes |
+| **Resiliência** | Se consolidado cair, lançamentos continua funcionando |
+| **Escalabilidade** | API e Workers escalam independentemente |
+| **Performance** | Consolidado servido via cache (Redis) |
+| **Confiabilidade** | Fila garante que nenhum evento é perdido |
+
+### Fluxo de Dados
+
+```mermaid
+sequenceDiagram
+    actor U as Usuário
+    participant API as Cashflow API
+    participant DB as PostgreSQL
+    participant Q as Pub/Sub
+    participant W as Worker
+    participant C as Redis Cache
+    
+    U->>API: POST /lancamentos
+    API->>DB: Grava lançamento
+    API->>Q: Publica evento "LancamentoCriado"
+    API-->>U: 201 Created
+    
+    Q->>W: Consome evento
+    W->>DB: Recalcula consolidado
+    W->>C: Atualiza cache
+    
+    U->>API: GET /consolidado/{data}
+    API->>C: Busca no cache
+    C-->>API: Retorna dados
+    API-->>U: 200 OK
+```
+
+---
+
+## 🛠️ Stack Tecnológica
+
+| Camada | Tecnologia | Motivo |
+|--------|------------|--------|
+| **API** | ASP.NET Minimal API | Leve, rápido, stateless |
+| **Mensageria** | Cloud Pub/Sub | Gerenciado, escalável, durável |
+| **Cache** | Redis (Memorystore) | Baixa latência, distribuído |
+| **Banco** | PostgreSQL (Cloud SQL) | Confiável, suporta read replicas |
+| **Container** | Docker + GKE Autopilot | Auto-scaling, gerenciado |
+| **Resiliência** | Polly | Circuit breaker, retry, timeout |
+
+### Bibliotecas .NET
+
+| Biblioteca | Propósito |
+|------------|-----------|
+| **Polly** | Resiliência (retry, circuit breaker) |
+| **MediatR** | CQRS, desacoplamento de handlers |
+| **FluentValidation** | Validação de requests |
+| **Serilog** | Logging estruturado |
+| **OpenTelemetry** | Observabilidade |
+
+---
+
+## 🔄 Padrões de Resiliência
+
+### Circuit Breaker
+
+```mermaid
+stateDiagram-v2
+    [*] --> Closed
+    Closed --> Open : Falhas > threshold
+    Open --> HalfOpen : Timeout expirado
+    HalfOpen --> Closed : Sucesso
+    HalfOpen --> Open : Falha
+```
+
+### Retry com Exponential Backoff
+
+```mermaid
+flowchart LR
+    R1["Tentativa 1"] -->|Falha| W1["Espera 1s"]
+    W1 --> R2["Tentativa 2"]
+    R2 -->|Falha| W2["Espera 2s"]
+    W2 --> R3["Tentativa 3"]
+    R3 -->|Falha| W3["Espera 4s"]
+    W3 --> R4["Tentativa 4"]
+    R4 -->|Falha| E["Erro Final"]
+```
+
+---
+
+## 📊 Critérios de Auto-Scale
+
+| Serviço | Métrica | Escala quando |
+|---------|---------|---------------|
+| **API** | CPU / Requests | CPU > 70% ou > 100 req/s |
+| **Worker** | Queue depth | Fila > 1000 mensagens |
+| **Redis** | Memória | > 80% memória |
+
+---
+
+## 🤔 Por que essa estrutura de código?
 
 ### Separação `src/` e `tests/`
 
@@ -43,6 +204,8 @@ Optamos por uma **Class Library** (`Cashflow`) em vez de uma aplicação execut�
 - ✅ **Isolamento**: Regras de negócio ficam isoladas de frameworks e infraestrutura
 - ✅ **Testabilidade**: Facilita testes unitários sem dependências externas
 - ✅ **Evolução**: Permite adicionar camadas (API, Persistência) sem modificar o domínio
+
+---
 
 ## 🎯 Princípios Arquiteturais
 
@@ -167,7 +330,9 @@ public decimal Valor { get; private set; }  // Só pode ser definido internament
 - ✅ Thread-safety mais simples
 - ✅ Facilita raciocínio sobre o código
 
-## 📁 Estrutura de Pastas
+---
+
+## 📁 Estrutura de Pastas (Atual)
 
 ```
 Cashflow.sln
@@ -188,21 +353,54 @@ Cashflow.sln
 │       └── FluxoCaixaTests.cs
 │
 └── docs/
-    ├── README.md
     ├── ARQUITETURA.md             # Este arquivo
     ├── DOMINIO.md
     ├── TESTES.md
+    ├── CUSTOS.md
     └── ROADMAP.md
 ```
+
+## 📁 Estrutura de Pastas (Planejada)
+
+```
+Cashflow.sln
+│
+├── src/
+│   ├── Cashflow/                  # Domínio (atual)
+│   ├── Cashflow.Application/      # Casos de uso, CQRS
+│   ├── Cashflow.Infrastructure/   # Persistência, Cache
+│   └── Cashflow.API/              # Web API
+│
+├── workers/
+│   └── Cashflow.ConsolidationWorker/  # Worker de consolidação
+│
+├── tests/
+│   ├── Cashflow.Tests/                # Testes de domínio
+│   ├── Cashflow.Application.Tests/    # Testes de aplicação
+│   └── Cashflow.API.Tests/            # Testes de integração
+│
+└── docs/
+```
+
+---
 
 ## 🔄 Fluxo de Dependências
 
 ```mermaid
 flowchart BT
-    Tests["🧪 Cashflow.Tests<br/>(Projeto de Teste)"]
-    Domain["🎯 Cashflow<br/>(Class Library)<br/><br/>Sem dependências externas"]
+    Tests["🧪 Cashflow.Tests"]
+    API["🌐 Cashflow.API"]
+    Worker["⚙️ Cashflow.Worker"]
+    App["📦 Cashflow.Application"]
+    Infra["🗄️ Cashflow.Infrastructure"]
+    Domain["🎯 Cashflow<br/>(Domain)"]
     
-    Tests -->|referencia| Domain
+    Tests --> Domain
+    API --> App
+    Worker --> App
+    App --> Domain
+    App --> Infra
+    Infra --> Domain
 ```
 
 **Importante:** O projeto de domínio (`Cashflow`) não tem dependências externas, apenas do .NET. Isso é intencional para:
@@ -211,34 +409,12 @@ flowchart BT
 - ✅ Evitar acoplamento com frameworks
 - ✅ Facilitar evolução independente
 
-## 🚀 Evolução Futura
-
-A arquitetura foi pensada para permitir evolução:
-
-```mermaid
-flowchart TB
-    subgraph Apresentação["Camada de Apresentação"]
-        API["🌐 API<br/>(HTTP)"]
-        Worker["⚙️ Worker<br/>(Jobs)"]
-        Console["💻 Console<br/>(CLI)"]
-    end
-    
-    subgraph Domínio["Camada de Domínio"]
-        Domain["🎯 Cashflow<br/>(Domain - atual)"]
-    end
-    
-    subgraph Infraestrutura["Camada de Infraestrutura"]
-        Infra["🗄️ Cashflow.Infra<br/>(Persistência)"]
-    end
-    
-    API --> Domain
-    Worker --> Domain
-    Console --> Domain
-    Domain --> Infra
-```
+---
 
 ## 📚 Referências
 
 - [Domain-Driven Design - Eric Evans](https://www.domainlanguage.com/ddd/)
 - [Clean Architecture - Robert C. Martin](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
 - [.NET Project Structure Best Practices](https://docs.microsoft.com/en-us/dotnet/core/porting/project-structure)
+- [Cloud Pub/Sub Documentation](https://cloud.google.com/pubsub/docs)
+- [GKE Autopilot](https://cloud.google.com/kubernetes-engine/docs/concepts/autopilot-overview)
