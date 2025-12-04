@@ -1,0 +1,139 @@
+# ============================================
+# Cashflow - Docker Compose
+# ============================================
+# Infraestrutura completa para execução local
+# Inclui: PostgreSQL, Redis, RabbitMQ
+# ============================================
+
+services:
+  # ==========================================
+  # 🗄️ PostgreSQL - Banco de Dados Principal
+  # ==========================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: cashflow-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cashflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cashflow123}
+      POSTGRES_DB: ${POSTGRES_DB:-cashflow_db}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cashflow} -d ${POSTGRES_DB:-cashflow_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - cashflow-network
+
+  # ==========================================
+  # ⚡ Redis - Cache Distribuído
+  # ==========================================
+  redis:
+    image: redis:7-alpine
+    container_name: cashflow-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cashflow-network
+
+  # ==========================================
+  # 📨 RabbitMQ - Message Broker
+  # ==========================================
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: cashflow-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-cashflow}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-cashflow123}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-cashflow}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"       # AMQP
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672" # Management UI
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - cashflow-network
+
+  # ==========================================
+  # 📊 Adminer - Interface Web para DB
+  # ==========================================
+  adminer:
+    image: adminer:latest
+    container_name: cashflow-adminer
+    restart: unless-stopped
+    ports:
+      - "${ADMINER_PORT:-8081}:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: dracula
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - cashflow-network
+    profiles:
+      - tools
+
+  # ==========================================
+  # 📈 Redis Commander - Interface Web para Redis
+  # ==========================================
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: cashflow-redis-commander
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "${REDIS_COMMANDER_PORT:-8082}:8081"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - cashflow-network
+    profiles:
+      - tools
+
+# ============================================
+# 📁 Volumes Persistentes
+# ============================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+
+# ============================================
+# 🌐 Redes
+# ============================================
+networks:
+  cashflow-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+

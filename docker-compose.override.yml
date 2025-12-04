@@ -1,0 +1,99 @@
+# ============================================
+# Cashflow - Docker Compose Override
+# ============================================
+# Configurações adicionais para desenvolvimento
+# Este arquivo é automaticamente carregado junto
+# com o docker-compose.yml
+# ============================================
+
+services:
+  # ==========================================
+  # 🌐 API - Cashflow Web API
+  # ==========================================
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: build
+    container_name: cashflow-api
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=${POSTGRES_DB:-cashflow_db};Username=${POSTGRES_USER:-cashflow};Password=${POSTGRES_PASSWORD:-cashflow123}
+      - ConnectionStrings__Redis=redis:6379
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__Username=${RABBITMQ_USER:-cashflow}
+      - RabbitMQ__Password=${RABBITMQ_PASSWORD:-cashflow123}
+      - RabbitMQ__VirtualHost=${RABBITMQ_VHOST:-cashflow}
+    ports:
+      - "${API_PORT:-5000}:8080"
+    volumes:
+      - .:/src:ro
+      - ~/.nuget/packages:/root/.nuget/packages:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - cashflow-network
+    profiles:
+      - app
+
+  # ==========================================
+  # ⚙️ Worker - Consolidation Worker
+  # ==========================================
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+      target: build
+    container_name: cashflow-worker
+    restart: unless-stopped
+    environment:
+      - DOTNET_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=${POSTGRES_DB:-cashflow_db};Username=${POSTGRES_USER:-cashflow};Password=${POSTGRES_PASSWORD:-cashflow123}
+      - ConnectionStrings__Redis=redis:6379
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__Username=${RABBITMQ_USER:-cashflow}
+      - RabbitMQ__Password=${RABBITMQ_PASSWORD:-cashflow123}
+      - RabbitMQ__VirtualHost=${RABBITMQ_VHOST:-cashflow}
+    volumes:
+      - .:/src:ro
+      - ~/.nuget/packages:/root/.nuget/packages:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - cashflow-network
+    profiles:
+      - app
+
+  # ==========================================
+  # 🧪 Testes - Execução de Testes
+  # ==========================================
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: build
+    container_name: cashflow-tests
+    working_dir: /src
+    command: dotnet test --verbosity normal --results-directory /src/test-results
+    volumes:
+      - .:/src
+      - ~/.nuget/packages:/root/.nuget/packages:ro
+    networks:
+      - cashflow-network
+    profiles:
+      - test
+

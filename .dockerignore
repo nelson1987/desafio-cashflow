@@ -1,0 +1,98 @@
+# ============================================
+# .dockerignore - Cashflow
+# ============================================
+# Arquivos e pastas ignorados durante o build
+# do Docker para otimizar o tempo de build
+# e reduzir o tamanho das imagens
+# ============================================
+
+# Diretórios de build do .NET
+**/bin/
+**/obj/
+**/out/
+**/publish/
+
+# Diretórios de IDE
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Arquivos de teste e cobertura
+**/TestResults/
+**/test-results/
+**/coverage/
+**/*.coverage
+**/*.coveragexml
+**/*.trx
+
+# Arquivos de configuração local
+*.local
+*.local.json
+appsettings.Development.json
+appsettings.*.local.json
+.env
+.env.*
+!.env.example
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker
+**/Dockerfile*
+**/docker-compose*
+.docker/
+
+# Documentação
+docs/
+*.md
+LICENSE
+
+# Arquivos de log
+**/*.log
+**/logs/
+
+# Arquivos temporários
+**/tmp/
+**/temp/
+**/.tmp/
+**/.temp/
+
+# Node modules (se houver frontend)
+**/node_modules/
+**/package-lock.json
+**/yarn.lock
+**/pnpm-lock.yaml
+
+# NuGet
+*.nupkg
+**/packages/
+
+# Arquivos de backup
+**/*.bak
+**/*.backup
+**/*~
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Terraform/Infra
+**/.terraform/
+*.tfstate
+*.tfstate.*
+
+# Kubernetes manifests (se estiverem na raiz)
+k8s/
+kubernetes/
+charts/
+
