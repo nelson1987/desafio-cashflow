@@ -88,7 +88,7 @@ services:
 networks:
   cashflow-network:
     name: cashflow-network
-    external: true
+    external: false
 
 volumes:
   prometheus-data:

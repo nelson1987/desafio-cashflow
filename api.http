@@ -1,0 +1,190 @@
+### ============================================
+### Cashflow API - HTTP Requests
+### ============================================
+### Use com a extensão REST Client do VS Code
+### ou com o Cursor para testar os endpoints
+### ============================================
+
+@baseUrl = http://localhost:5000
+@contentType = application/json
+
+### ==========================================
+### 🏥 Health Check
+### ==========================================
+
+### Verificar saúde da aplicação
+GET {{baseUrl}}/health
+
+### ==========================================
+### 📊 Métricas (Prometheus)
+### ==========================================
+
+### Obter métricas para Prometheus
+GET {{baseUrl}}/metrics
+
+### ==========================================
+### 💰 Lançamentos
+### ==========================================
+
+### Criar lançamento de CRÉDITO
+POST {{baseUrl}}/api/lancamentos
+Content-Type: {{contentType}}
+
+{
+  "valor": 1500.00,
+  "tipo": 1,
+  "data": "2024-12-05",
+  "descricao": "Venda de produtos"
+}
+
+### Criar lançamento de DÉBITO
+POST {{baseUrl}}/api/lancamentos
+Content-Type: {{contentType}}
+
+{
+  "valor": 350.00,
+  "tipo": 2,
+  "data": "2024-12-05",
+  "descricao": "Pagamento de fornecedor"
+}
+
+### Listar lançamentos (paginado)
+GET {{baseUrl}}/api/lancamentos?pagina=1&tamanhoPagina=10
+
+### Listar lançamentos - página 2
+GET {{baseUrl}}/api/lancamentos?pagina=2&tamanhoPagina=10
+
+### Obter lançamento por ID
+# Substitua o GUID pelo ID de um lançamento existente
+GET {{baseUrl}}/api/lancamentos/00000000-0000-0000-0000-000000000000
+
+### Listar lançamentos por data
+GET {{baseUrl}}/api/lancamentos/data/2024-12-05
+
+### ==========================================
+### 📈 Consolidado Diário
+### ==========================================
+
+### Obter saldo consolidado de uma data
+GET {{baseUrl}}/api/consolidado/2024-12-05
+
+### Obter saldo consolidado por período
+GET {{baseUrl}}/api/consolidado/periodo?dataInicio=2024-12-01&dataFim=2024-12-31
+
+### Recalcular consolidado de uma data
+POST {{baseUrl}}/api/consolidado/2024-12-05/recalcular
+
+### ==========================================
+### 🧪 Cenários de Teste
+### ==========================================
+
+### Cenário 1: Criar vários lançamentos para teste de consolidação
+
+### Crédito 1 - Venda manhã
+POST {{baseUrl}}/api/lancamentos
+Content-Type: {{contentType}}
+
+{
+  "valor": 500.00,
+  "tipo": 1,
+  "data": "2024-12-05",
+  "descricao": "Venda manhã - Cliente A"
+}
+
+###
+
+### Crédito 2 - Venda tarde
+POST {{baseUrl}}/api/lancamentos
+Content-Type: {{contentType}}
+
+{
+  "valor": 750.00,
+  "tipo": 1,
+  "data": "2024-12-05",
+  "descricao": "Venda tarde - Cliente B"
+}
+
+###
+
+### Débito 1 - Aluguel
+POST {{baseUrl}}/api/lancamentos
+Content-Type: {{contentType}}
+
+{
+  "valor": 200.00,
+  "tipo": 2,
+  "data": "2024-12-05",
+  "descricao": "Pagamento parcial aluguel"
+}
+
+###
+
+### Verificar consolidado após lançamentos
+GET {{baseUrl}}/api/consolidado/2024-12-05
+
+### ==========================================
+### ❌ Testes de Validação (devem falhar)
+### ==========================================
+
+### Erro: Valor zero
+POST {{baseUrl}}/api/lancamentos
+Content-Type: {{contentType}}
+
+{
+  "valor": 0,
+  "tipo": 1,
+  "data": "2024-12-05",
+  "descricao": "Teste valor zero"
+}
+
+###
+
+### Erro: Valor negativo
+POST {{baseUrl}}/api/lancamentos
+Content-Type: {{contentType}}
+
+{
+  "valor": -100,
+  "tipo": 1,
+  "data": "2024-12-05",
+  "descricao": "Teste valor negativo"
+}
+
+###
+
+### Erro: Descrição vazia
+POST {{baseUrl}}/api/lancamentos
+Content-Type: {{contentType}}
+
+{
+  "valor": 100,
+  "tipo": 1,
+  "data": "2024-12-05",
+  "descricao": ""
+}
+
+###
+
+### Erro: Tipo inválido
+POST {{baseUrl}}/api/lancamentos
+Content-Type: {{contentType}}
+
+{
+  "valor": 100,
+  "tipo": 99,
+  "data": "2024-12-05",
+  "descricao": "Tipo inválido"
+}
+
+### ==========================================
+### 📝 Referência de Tipos
+### ==========================================
+### 
+### TipoLancamento:
+###   1 = Crédito (entrada)
+###   2 = Débito (saída)
+###
+### Formato de Data: YYYY-MM-DD
+###
+### ==========================================
+
