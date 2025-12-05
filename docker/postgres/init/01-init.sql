@@ -6,7 +6,6 @@
 -- ============================================
 
 -- Cria extensões úteis
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 
 -- Schema para a aplicação
@@ -14,7 +13,7 @@ CREATE SCHEMA IF NOT EXISTS cashflow;
 
 -- Tabela de Lançamentos
 CREATE TABLE IF NOT EXISTS cashflow.lancamentos (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     valor DECIMAL(18, 2) NOT NULL CHECK (valor > 0),
     tipo SMALLINT NOT NULL CHECK (tipo IN (1, 2)), -- 1: Crédito, 2: Débito
     data TIMESTAMP NOT NULL,

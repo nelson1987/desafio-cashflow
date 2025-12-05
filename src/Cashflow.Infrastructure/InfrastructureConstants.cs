@@ -135,7 +135,7 @@ public static class InfrastructureConstants
     /// </summary>
     public static class SqlDefaults
     {
-        public const string UuidGenerateV4 = "uuid_generate_v4()";
+        public const string UuidGenerateV4 = "gen_random_uuid()";
         public const string CurrentTimestamp = "CURRENT_TIMESTAMP";
         public const string DateColumnType = "date";
     }

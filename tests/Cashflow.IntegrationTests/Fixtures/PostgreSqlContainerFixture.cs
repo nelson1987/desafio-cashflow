@@ -31,15 +31,14 @@ public class PostgreSqlContainerFixture : IAsyncLifetime
     {
         await _container.StartAsync();
 
-        // Cria a extensão uuid-ossp ANTES de criar o schema
-        // pois as tabelas usam uuid_generate_v4() como valor padrão
+        // Cria o schema antes das tabelas
+        // gen_random_uuid() é nativo do PostgreSQL 13+ (não precisa de extensão)
         await using var context = CreateDbContext();
         await context.Database.ExecuteSqlRawAsync("""
-            CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
             CREATE SCHEMA IF NOT EXISTS cashflow;
             """);
         
-        // Agora cria as tabelas (a extensão já existe)
+        // Cria as tabelas
         await context.Database.EnsureCreatedAsync();
     }
 
