@@ -1,0 +1,52 @@
+using Cashflow.Application.Abstractions;
+using Cashflow.Application.Services;
+using Cashflow.ConsolidationWorker;
+using Cashflow.ConsolidationWorker.Services;
+using Cashflow.Infrastructure;
+using Serilog;
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .WriteTo.Console(
+        outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
+    .Enrich.FromLogContext()
+    .CreateLogger();
+
+try
+{
+    Log.Information("Iniciando Cashflow Consolidation Worker...");
+
+    var builder = Host.CreateApplicationBuilder(args);
+
+    // Serilog
+    builder.Services.AddSerilog();
+
+    // Configuração do RabbitMQ
+    builder.Services.Configure<RabbitMqConsumerSettings>(
+        builder.Configuration.GetSection("RabbitMQ"));
+
+    // Infrastructure (PostgreSQL, Redis, RabbitMQ)
+    builder.Services.AddInfrastructure(builder.Configuration);
+
+    // Application Services
+    builder.Services.AddScoped<IConsolidadoService, ConsolidadoService>();
+
+    // Background Service para consumir mensagens
+    builder.Services.AddHostedService<ConsolidationWorkerService>();
+
+    // Health check via arquivo
+    builder.Services.AddHostedService<HealthCheckFileService>();
+
+    var host = builder.Build();
+    await host.RunAsync();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Worker encerrado inesperadamente");
+    throw;
+}
+finally
+{
+    Log.CloseAndFlush();
+}
+
