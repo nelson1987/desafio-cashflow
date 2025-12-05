@@ -1,110 +1,151 @@
 using Shouldly;
+using Xunit;
 
 namespace Cashflow.Tests;
 
 public class SaldoDiarioTests
 {
     [Fact]
-    public void Deve_Calcular_Saldo_Corretamente()
+    public void Criar_ComValoresDiretos_DeveDefinirPropriedadesCorretamente()
     {
         // Arrange
         var data = new DateTime(2024, 1, 15);
-        var lancamentos = new List<Lancamento>
-        {
-            new(200m, TipoLancamento.Credito, data, "Venda 1"),
-            new(150m, TipoLancamento.Credito, data, "Venda 2"),
-            new(100m, TipoLancamento.Debito, data, "Compra 1")
-        };
+        var totalCreditos = 1500m;
+        var totalDebitos = 500m;
+        var quantidade = 10;
 
         // Act
-        var saldoDiario = new SaldoDiario(data, lancamentos);
+        var saldo = new SaldoDiario(data, totalCreditos, totalDebitos, quantidade);
 
         // Assert
-        saldoDiario.TotalCreditos.ShouldBe(350m);
-        saldoDiario.TotalDebitos.ShouldBe(100m);
-        saldoDiario.Saldo.ShouldBe(250m);
-        saldoDiario.QuantidadeLancamentos.ShouldBe(3);
+        saldo.Data.ShouldBe(data.Date);
+        saldo.TotalCreditos.ShouldBe(totalCreditos);
+        saldo.TotalDebitos.ShouldBe(totalDebitos);
+        saldo.QuantidadeLancamentos.ShouldBe(quantidade);
+        saldo.Saldo.ShouldBe(1000m);
     }
 
     [Fact]
-    public void Deve_Ignorar_Lancamentos_De_Outros_Dias()
+    public void Criar_ComLancamentos_DeveCalcularTotaisCorretamente()
     {
         // Arrange
-        var dataAlvo = new DateTime(2024, 1, 15);
+        var data = DateTime.Today;
         var lancamentos = new List<Lancamento>
         {
-            new(200m, TipoLancamento.Credito, dataAlvo, "Venda do dia"),
-            new(500m, TipoLancamento.Credito, dataAlvo.AddDays(-1), "Venda dia anterior"),
-            new(300m, TipoLancamento.Debito, dataAlvo.AddDays(1), "Compra dia seguinte")
+            new(100m, TipoLancamento.Credito, data, "Crédito 1"),
+            new(200m, TipoLancamento.Credito, data, "Crédito 2"),
+            new(50m, TipoLancamento.Debito, data, "Débito 1")
         };
 
         // Act
-        var saldoDiario = new SaldoDiario(dataAlvo, lancamentos);
+        var saldo = new SaldoDiario(data, lancamentos);
 
         // Assert
-        saldoDiario.TotalCreditos.ShouldBe(200m);
-        saldoDiario.TotalDebitos.ShouldBe(0m);
-        saldoDiario.Saldo.ShouldBe(200m);
-        saldoDiario.QuantidadeLancamentos.ShouldBe(1);
+        saldo.TotalCreditos.ShouldBe(300m);
+        saldo.TotalDebitos.ShouldBe(50m);
+        saldo.Saldo.ShouldBe(250m);
+        saldo.QuantidadeLancamentos.ShouldBe(3);
     }
 
     [Fact]
-    public void Deve_Retornar_Saldo_Zero_Quando_Nao_Houver_Lancamentos()
+    public void Criar_ComLancamentosDeOutrosDias_DeveFiltrarApenasDoDiaEspecificado()
     {
         // Arrange
-        var data = new DateTime(2024, 1, 15);
+        var data = DateTime.Today;
+        var lancamentos = new List<Lancamento>
+        {
+            new(100m, TipoLancamento.Credito, data, "Do dia"),
+            new(200m, TipoLancamento.Credito, data.AddDays(-1), "Dia anterior"),
+            new(300m, TipoLancamento.Credito, data.AddDays(1), "Dia posterior")
+        };
+
+        // Act
+        var saldo = new SaldoDiario(data, lancamentos);
+
+        // Assert
+        saldo.TotalCreditos.ShouldBe(100m);
+        saldo.QuantidadeLancamentos.ShouldBe(1);
+    }
+
+    [Fact]
+    public void Criar_SemLancamentos_DeveRetornarZeros()
+    {
+        // Arrange
+        var data = DateTime.Today;
         var lancamentos = new List<Lancamento>();
 
         // Act
-        var saldoDiario = new SaldoDiario(data, lancamentos);
+        var saldo = new SaldoDiario(data, lancamentos);
 
         // Assert
-        saldoDiario.Saldo.ShouldBe(0m);
-        saldoDiario.TotalCreditos.ShouldBe(0m);
-        saldoDiario.TotalDebitos.ShouldBe(0m);
-        saldoDiario.QuantidadeLancamentos.ShouldBe(0);
+        saldo.TotalCreditos.ShouldBe(0m);
+        saldo.TotalDebitos.ShouldBe(0m);
+        saldo.Saldo.ShouldBe(0m);
+        saldo.QuantidadeLancamentos.ShouldBe(0);
     }
 
     [Fact]
-    public void Deve_Retornar_Saldo_Negativo_Quando_Debitos_Maiores()
+    public void Criar_ComLancamentosNull_DeveLancarArgumentNullException()
     {
         // Arrange
-        var data = new DateTime(2024, 1, 15);
-        var lancamentos = new List<Lancamento>
-        {
-            new(100m, TipoLancamento.Credito, data, "Venda"),
-            new(300m, TipoLancamento.Debito, data, "Pagamento fornecedor")
-        };
+        var data = DateTime.Today;
 
-        // Act
-        var saldoDiario = new SaldoDiario(data, lancamentos);
-
-        // Assert
-        saldoDiario.Saldo.ShouldBe(-200m);
-    }
-
-    [Fact]
-    public void Vazio_Deve_Criar_Saldo_Zerado()
-    {
-        // Arrange
-        var data = new DateTime(2024, 1, 15);
-
-        // Act
-        var saldoDiario = SaldoDiario.Vazio(data);
-
-        // Assert
-        saldoDiario.Data.ShouldBe(data);
-        saldoDiario.Saldo.ShouldBe(0m);
-        saldoDiario.TotalCreditos.ShouldBe(0m);
-        saldoDiario.TotalDebitos.ShouldBe(0m);
-        saldoDiario.QuantidadeLancamentos.ShouldBe(0);
-    }
-
-    [Fact]
-    public void Deve_Lancar_Excecao_Quando_Lancamentos_For_Nulo()
-    {
         // Act & Assert
-        Should.Throw<ArgumentNullException>(() =>
-            new SaldoDiario(DateTime.Today, null!));
+        Should.Throw<ArgumentNullException>(() => new SaldoDiario(data, null!));
+    }
+
+    [Fact]
+    public void Saldo_ComMaisDebitoQueCredito_DeveSerNegativo()
+    {
+        // Arrange
+        var saldo = new SaldoDiario(DateTime.Today, 100m, 500m, 5);
+
+        // Assert
+        saldo.Saldo.ShouldBe(-400m);
+        saldo.Saldo.ShouldBeLessThan(0);
+    }
+
+    [Fact]
+    public void Vazio_DeveRetornarSaldoZerado()
+    {
+        // Arrange
+        var data = DateTime.Today;
+
+        // Act
+        var saldo = SaldoDiario.Vazio(data);
+
+        // Assert
+        saldo.Data.ShouldBe(data.Date);
+        saldo.TotalCreditos.ShouldBe(0m);
+        saldo.TotalDebitos.ShouldBe(0m);
+        saldo.Saldo.ShouldBe(0m);
+        saldo.QuantidadeLancamentos.ShouldBe(0);
+    }
+
+    [Fact]
+    public void Criar_ComDataEHora_DeveNormalizarParaData()
+    {
+        // Arrange
+        var dataComHora = new DateTime(2024, 1, 15, 14, 30, 0);
+
+        // Act
+        var saldo = new SaldoDiario(dataComHora, 100m, 50m, 1);
+
+        // Assert
+        saldo.Data.ShouldBe(new DateTime(2024, 1, 15));
+        saldo.Data.TimeOfDay.ShouldBe(TimeSpan.Zero);
+    }
+
+    [Fact]
+    public void JsonConstructor_DeveCriarInstanciaVazia()
+    {
+        // Act
+        var saldo = new SaldoDiario();
+
+        // Assert
+        saldo.Data.ShouldBe(default);
+        saldo.TotalCreditos.ShouldBe(0m);
+        saldo.TotalDebitos.ShouldBe(0m);
+        saldo.QuantidadeLancamentos.ShouldBe(0);
     }
 }
