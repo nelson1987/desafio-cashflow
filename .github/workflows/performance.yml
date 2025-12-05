@@ -1,0 +1,155 @@
+# ============================================
+# Cashflow - Performance Tests Pipeline
+# ============================================
+# Executa testes de performance com K6
+# Trigger: manual ou após release
+# ============================================
+
+name: Performance Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Tipo de teste'
+        required: true
+        default: 'smoke'
+        type: choice
+        options:
+          - smoke
+          - load
+          - stress
+      duration:
+        description: 'Duração (ex: 1m, 5m)'
+        required: false
+        default: '1m'
+
+  # Executa após release (opcional)
+  release:
+    types: [published]
+
+env:
+  DOTNET_VERSION: "9.0.x"
+
+jobs:
+  # ==========================================
+  # 🚀 Setup e Start da Aplicação
+  # ==========================================
+  performance-test:
+    name: K6 Performance Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: cashflow
+          POSTGRES_PASSWORD: cashflow123
+          POSTGRES_DB: cashflow_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      rabbitmq:
+        image: rabbitmq:3-management-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: cashflow
+          RABBITMQ_DEFAULT_PASS: cashflow123
+          RABBITMQ_DEFAULT_VHOST: cashflow
+        ports:
+          - 5672:5672
+          - 15672:15672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: 📥 Restore de dependências
+        run: dotnet restore Cashflow.sln
+
+      - name: 🏗️ Build
+        run: dotnet build src/Cashflow.WebApi --configuration Release --no-restore
+
+      - name: 🚀 Start API
+        run: |
+          cd src/Cashflow.WebApi
+          dotnet run --configuration Release --no-build &
+          sleep 10
+        env:
+          ASPNETCORE_URLS: http://localhost:5000
+          ConnectionStrings__PostgreSQL: "Host=localhost;Port=5432;Database=cashflow_db;Username=cashflow;Password=cashflow123"
+          ConnectionStrings__Redis: "localhost:6379"
+          RabbitMQ__Host: localhost
+          RabbitMQ__Port: 5672
+          RabbitMQ__Username: cashflow
+          RabbitMQ__Password: cashflow123
+          RabbitMQ__VirtualHost: cashflow
+
+      - name: ⏳ Aguardar API
+        run: |
+          for i in {1..30}; do
+            if curl -s http://localhost:5000/health | grep -q "Healthy"; then
+              echo "✅ API está pronta!"
+              exit 0
+            fi
+            echo "Aguardando API... ($i/30)"
+            sleep 2
+          done
+          echo "❌ API não iniciou a tempo"
+          exit 1
+
+      - name: 🔧 Setup K6
+        uses: grafana/setup-k6-action@v1
+
+      - name: 🔥 Smoke Test
+        if: github.event.inputs.test_type == 'smoke' || github.event_name == 'release'
+        run: k6 run tests/k6/smoke-test.js
+        env:
+          BASE_URL: http://localhost:5000
+
+      - name: 📊 Load Test - Consolidado
+        if: github.event.inputs.test_type == 'load'
+        run: k6 run tests/k6/consolidado-load-test.js
+        env:
+          BASE_URL: http://localhost:5000
+
+      - name: 💪 Stress Test
+        if: github.event.inputs.test_type == 'stress'
+        run: k6 run tests/k6/stress-test.js
+        env:
+          BASE_URL: http://localhost:5000
+
+      - name: 📈 Upload K6 Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: k6-results
+          path: |
+            *.json
+            *.html
+          retention-days: 7
+
