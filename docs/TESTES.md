@@ -19,8 +19,8 @@ Este documento descreve a estratégia de testes adotada no projeto Cashflow, inc
 graph TB
     subgraph Pirâmide["Pirâmide de Testes"]
         Perf["🔺 Performance<br/>(K6 - 55 RPS)"]
-        Integration["🔸 Integração<br/>(55 testes)"]
-        Unit["🟢 Unitários<br/>(80 testes)"]
+        Integration["🔸 Integração<br/>(43 testes)"]
+        Unit["🟢 Unitários<br/>(203 testes)"]
     end
     
     Perf --> Integration
@@ -32,27 +32,27 @@ graph TB
 ```
 
 **Situação Atual:**
-- ✅ **Testes Unitários**: 80 testes (Domínio + Application)
-- ✅ **Testes de Integração**: 55 testes (Testcontainers)
+- ✅ **Testes Unitários**: 203 testes (83 Domínio + 120 Application)
+- ✅ **Testes de Integração**: 43 testes (Testcontainers)
 - ✅ **Testes de Performance**: K6 (55 RPS, P95 < 100ms)
 
 ## 📊 Resumo de Cobertura
 
 | Projeto | Testes | Tipo |
 |---------|--------|------|
-| `Cashflow.Tests` | 26 | Unitário (Domínio) |
-| `Cashflow.Application.Tests` | 54 | Unitário (Application) |
-| `Cashflow.IntegrationTests` | 55 | Integração (API + DB) |
+| `Cashflow.Tests` | 83 | Unitário (Domínio) |
+| `Cashflow.Application.Tests` | 120 | Unitário (Application) |
+| `Cashflow.IntegrationTests` | 43 | Integração (API + DB) |
 | `tests/k6` | 4 scripts | Performance (K6) |
-| **Total** | **135 + K6** | - |
+| **Total** | **246 + K6** | - |
 
 ### Por Camada
 
 ```mermaid
 pie title Distribuição dos Testes
-    "Domínio (26)" : 26
-    "Application (54)" : 54
-    "Integração (55)" : 55
+    "Domínio (83)" : 83
+    "Application (120)" : 120
+    "Integração (43)" : 43
 ```
 
 ## 🎯 Padrão AAA (Arrange-Act-Assert)
@@ -251,8 +251,8 @@ dotnet test --filter "FullyQualifiedName~LancamentoTests"
 
 ```
 Execução de Teste Bem-sucedida.
-Total de testes: 135
-     Aprovados: 130
+Total de testes: 251
+     Aprovados: 246
      Ignorados: 5
 ```
 
@@ -290,23 +290,28 @@ tests/
 
 ## ✅ Cenários Cobertos
 
-### Domínio (26 testes)
+### Domínio (83 testes)
 
 | Classe | Cenários |
 |--------|----------|
-| **Lancamento** | Criação, validação, ValorComSinal, EhDoDia |
-| **SaldoDiario** | Cálculo, filtro por dia, edge cases |
-| **FluxoCaixa** | Registrar, consolidar, relatório |
+| **Lancamento** | Criação, validação, ValorComSinal, EhDoDia, edge cases |
+| **SaldoDiario** | Cálculo, filtro por dia, normalização, edge cases |
+| **FluxoCaixa** | Registrar, consolidar, relatório, acumulado |
+| **DomainConstants** | Validação de todas as constantes |
+| **TipoLancamento** | Conversão, parsing, valores válidos |
+| **LancamentoCriadoEvent** | Criação e mapeamento |
 
-### Application (54 testes)
+### Application (120 testes)
 
 | Classe | Cenários |
 |--------|----------|
 | **LancamentoService** | CRUD, validação, publicação de eventos |
 | **ConsolidadoService** | Cálculo, período, recálculo |
-| **CriarLancamentoValidator** | Todas as regras de validação |
+| **CriarLancamentoValidator** | Todas as regras de validação + edge cases |
+| **DTOs** | LancamentoResponse, SaldoConsolidadoResponse, paginação |
+| **Result Pattern** | Success, Failure, erros múltiplos |
 
-### Integração (55 testes)
+### Integração (43 testes)
 
 | Área | Cenários |
 |------|----------|
@@ -366,16 +371,17 @@ k6 run tests/k6/stress-test.js
 
 ### CI/CD
 
-Os testes K6 rodam automaticamente no GitHub Actions após o CI passar na branch `main`:
+Os testes K6 rodam automaticamente no GitHub Actions como parte do pipeline CI/CD na branch `main`:
 
 ```yaml
-# .github/workflows/performance.yml
-on:
-  workflow_run:
-    workflows: ["CI/CD Pipeline"]
-    types: [completed]
-    branches: [main]
+# .github/workflows/ci.yml (job: performance-tests)
+performance-tests:
+  name: Performance Tests (K6)
+  needs: [unit-tests, integration-tests]
+  if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 ```
+
+Após todos os jobs passarem, um **release automático** é criado com a versão incrementada.
 
 ### Metas de Performance
 

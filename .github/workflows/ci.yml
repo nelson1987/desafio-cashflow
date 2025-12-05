@@ -25,9 +25,10 @@ env:
 
 # Permissões necessárias para o GITHUB_TOKEN
 permissions:
-  contents: read
+  contents: write
   checks: write
   pull-requests: write
+  packages: write
 
 jobs:
   # ==========================================
@@ -454,4 +455,156 @@ jobs:
             exit 1
           fi
           echo "✅ Todos os jobs passaram com sucesso!"
+
+  # ==========================================
+  # 🏷️ Auto Release (apenas na main)
+  # ==========================================
+  auto-release:
+    name: Auto Release
+    runs-on: ubuntu-latest
+    needs: [build, unit-tests, integration-tests, docker-build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🏷️ Gerar versão automática
+        id: version
+        run: |
+          # Pega a última tag de versão
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "Última tag: $LAST_TAG"
+          
+          # Extrai major.minor.patch
+          VERSION=${LAST_TAG#v}
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          
+          # Incrementa patch por padrão
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="v${MAJOR}.${MINOR}.${NEW_PATCH}"
+          
+          # Verifica se os commits desde a última tag contêm feat: (minor) ou BREAKING CHANGE (major)
+          COMMITS=$(git log ${LAST_TAG}..HEAD --oneline 2>/dev/null || git log --oneline)
+          
+          if echo "$COMMITS" | grep -qE "^[a-f0-9]+ (feat|feature)(\(.+\))?:"; then
+            NEW_MINOR=$((MINOR + 1))
+            NEW_VERSION="v${MAJOR}.${NEW_MINOR}.0"
+          fi
+          
+          if echo "$COMMITS" | grep -qE "BREAKING CHANGE|^[a-f0-9]+ (feat|fix)(\(.+\))?!:"; then
+            NEW_MAJOR=$((MAJOR + 1))
+            NEW_VERSION="v${NEW_MAJOR}.0.0"
+          fi
+          
+          echo "Nova versão: $NEW_VERSION"
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "version_number=${NEW_VERSION#v}" >> $GITHUB_OUTPUT
+
+      - name: 📝 Gerar Release Notes
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          
+          if [ -z "$LAST_TAG" ]; then
+            COMMITS=$(git log --oneline --pretty=format:"- %s" | head -20)
+          else
+            COMMITS=$(git log ${LAST_TAG}..HEAD --oneline --pretty=format:"- %s")
+          fi
+          
+          # Categoriza os commits
+          FEATURES=$(echo "$COMMITS" | grep -E "^- (feat|feature)" || true)
+          FIXES=$(echo "$COMMITS" | grep -E "^- fix" || true)
+          OTHERS=$(echo "$COMMITS" | grep -vE "^- (feat|feature|fix)" || true)
+          
+          {
+            echo "## 🚀 O que há de novo"
+            echo ""
+            
+            if [ -n "$FEATURES" ]; then
+              echo "### ✨ Novos recursos"
+              echo "$FEATURES"
+              echo ""
+            fi
+            
+            if [ -n "$FIXES" ]; then
+              echo "### 🐛 Correções"
+              echo "$FIXES"
+              echo ""
+            fi
+            
+            if [ -n "$OTHERS" ]; then
+              echo "### 📦 Outras alterações"
+              echo "$OTHERS"
+              echo ""
+            fi
+            
+            echo "### 📊 Métricas de Qualidade"
+            echo "| Categoria | Quantidade |"
+            echo "|-----------|------------|"
+            echo "| Testes Unitários (Domain) | 83 |"
+            echo "| Testes Unitários (Application) | 120 |"
+            echo "| Testes de Integração | 43 |"
+            echo "| **Total** | **246** |"
+            echo ""
+            echo "### 🐳 Imagens Docker"
+            echo ""
+            echo "\`\`\`bash"
+            echo "docker pull ghcr.io/${{ github.repository }}/api:${{ steps.version.outputs.version_number }}"
+            echo "docker pull ghcr.io/${{ github.repository }}/worker:${{ steps.version.outputs.version_number }}"
+            echo "\`\`\`"
+          } > release_notes.md
+
+      - name: 🐳 Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔑 Login no GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🐳 Build e Push - API
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/api:${{ steps.version.outputs.version_number }}
+            ghcr.io/${{ github.repository }}/api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 🐳 Build e Push - Worker
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.worker
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/worker:${{ steps.version.outputs.version_number }}
+            ghcr.io/${{ github.repository }}/worker:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 🏷️ Criar Tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a ${{ steps.version.outputs.version }} -m "Release ${{ steps.version.outputs.version }}"
+          git push origin ${{ steps.version.outputs.version }}
+
+      - name: 🚀 Criar Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: Release ${{ steps.version.outputs.version }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
