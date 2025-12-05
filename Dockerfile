@@ -28,28 +28,27 @@ WORKDIR /src
 # Copia apenas os arquivos de projeto primeiro (cache de restore)
 COPY ["Cashflow.sln", "./"]
 COPY ["src/Cashflow/Cashflow.csproj", "src/Cashflow/"]
-COPY ["src/Cashflow.API/Cashflow.API.csproj", "src/Cashflow.API/"]
+COPY ["src/Cashflow.WebApi/Cashflow.WebApi.csproj", "src/Cashflow.WebApi/"]
 COPY ["src/Cashflow.Application/Cashflow.Application.csproj", "src/Cashflow.Application/"]
 COPY ["src/Cashflow.Infrastructure/Cashflow.Infrastructure.csproj", "src/Cashflow.Infrastructure/"]
 COPY ["tests/Cashflow.Tests/Cashflow.Tests.csproj", "tests/Cashflow.Tests/"]
+COPY ["tests/Cashflow.Application.Tests/Cashflow.Application.Tests.csproj", "tests/Cashflow.Application.Tests/"]
+COPY ["tests/Cashflow.IntegrationTests/Cashflow.IntegrationTests.csproj", "tests/Cashflow.IntegrationTests/"]
 
 # Restore de dependências (layer cacheada)
-RUN dotnet restore "src/Cashflow.API/Cashflow.API.csproj" || \
-    dotnet restore "Cashflow.sln"
+RUN dotnet restore "Cashflow.sln"
 
 # Copia o restante do código fonte
 COPY . .
 
 # Build do projeto
-WORKDIR "/src/src/Cashflow.API"
-RUN dotnet build "Cashflow.API.csproj" -c $BUILD_CONFIGURATION -o /app/build --no-restore || \
-    (cd /src && dotnet build -c $BUILD_CONFIGURATION -o /app/build)
+WORKDIR "/src/src/Cashflow.WebApi"
+RUN dotnet build "Cashflow.WebApi.csproj" -c $BUILD_CONFIGURATION -o /app/build --no-restore
 
 # Stage 3: Publish
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "Cashflow.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false --no-restore || \
-    (cd /src && dotnet publish -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false)
+RUN dotnet publish "Cashflow.WebApi.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false --no-restore
 
 # Stage 4: Final
 FROM base AS final
@@ -62,7 +61,4 @@ ENV ASPNETCORE_URLS=http://+:8080
 ENV DOTNET_RUNNING_IN_CONTAINER=true
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 
-ENTRYPOINT ["dotnet", "Cashflow.API.dll"]
-
-
-
+ENTRYPOINT ["dotnet", "Cashflow.WebApi.dll"]
