@@ -220,4 +220,3 @@ public class ConsolidadoEndpointsTests : IAsyncLifetime
 
     #endregion
 }
-

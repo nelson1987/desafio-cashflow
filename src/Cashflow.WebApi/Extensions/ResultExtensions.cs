@@ -36,7 +36,7 @@ public static class ResultExtensions
             return Results.Ok(result.Value);
 
         // Se contém "não encontrado" retorna 404
-        var hasNotFound = result.Errors.Any(e => 
+        var hasNotFound = result.Errors.Any(e =>
             e.Contains("não encontrado", StringComparison.OrdinalIgnoreCase) ||
             e.Contains("not found", StringComparison.OrdinalIgnoreCase));
 
@@ -45,4 +45,3 @@ public static class ResultExtensions
             : Results.BadRequest(new { errors = result.Errors });
     }
 }
-

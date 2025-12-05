@@ -14,4 +14,3 @@ public class RabbitMqConsumerSettings
     public string Queue { get; set; } = "cashflow.consolidation";
     public string RoutingKey { get; set; } = "lancamento.#";
 }
-

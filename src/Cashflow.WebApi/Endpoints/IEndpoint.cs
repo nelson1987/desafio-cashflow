@@ -10,4 +10,3 @@ public interface IEndpoint
     /// </summary>
     static abstract void Map(IEndpointRouteBuilder app);
 }
-

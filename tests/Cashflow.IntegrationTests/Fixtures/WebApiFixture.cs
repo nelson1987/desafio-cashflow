@@ -44,7 +44,7 @@ public class WebApiFixture : IAsyncLifetime
                         // Connection strings
                         ["ConnectionStrings:PostgreSQL"] = Infrastructure.PostgreSql.ConnectionString,
                         ["ConnectionStrings:Redis"] = Infrastructure.Redis.ConnectionString,
-                        
+
                         // RabbitMQ settings
                         ["RabbitMQ:Host"] = Infrastructure.RabbitMq.Host,
                         ["RabbitMQ:Port"] = Infrastructure.RabbitMq.Port.ToString(),
@@ -60,14 +60,14 @@ public class WebApiFixture : IAsyncLifetime
                     // Remove o DbContext original e outros serviços que serão reconfigurados
                     services.RemoveAll<DbContextOptions<CashflowDbContext>>();
                     services.RemoveAll<CashflowDbContext>();
-                    
+
                     // Remove os repositórios originais (eles dependem do DbContext antigo)
                     services.RemoveAll<ILancamentoRepository>();
                     services.RemoveAll<ISaldoConsolidadoRepository>();
 
                     // Configura os serviços com os containers de teste (inclui DbContext, Redis, RabbitMQ)
                     Infrastructure.ConfigureServices(services);
-                    
+
                     // Re-registra os repositórios para usar o novo DbContext
                     services.AddScoped<ILancamentoRepository, LancamentoRepository>();
                     services.AddScoped<ISaldoConsolidadoRepository, SaldoConsolidadoRepository>();
@@ -122,7 +122,7 @@ public class WebApiFixture : IAsyncLifetime
         {
             using var scope = Factory.Services.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<CashflowDbContext>();
-            
+
             // Verifica se as tabelas existem antes de truncar
             var tableExists = await context.Database.ExecuteSqlRawAsync(@"
                 DO $$
@@ -149,4 +149,3 @@ public class WebApiTestCollection : ICollectionFixture<WebApiFixture>
 {
     public const string Name = "WebApiTests";
 }
-

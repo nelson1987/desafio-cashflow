@@ -3,6 +3,7 @@ using Cashflow.Application.Services;
 using Cashflow.ConsolidationWorker;
 using Cashflow.ConsolidationWorker.Services;
 using Cashflow.Infrastructure;
+
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -49,4 +50,3 @@ finally
 {
     Log.CloseAndFlush();
 }
-

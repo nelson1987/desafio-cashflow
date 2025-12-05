@@ -1,4 +1,5 @@
 using Shouldly;
+
 using Xunit;
 
 namespace Cashflow.Tests;
@@ -124,7 +125,7 @@ public class FluxoCaixaTests
         var dataFim = DateTime.Today;
 
         // Act & Assert
-        Should.Throw<ArgumentException>(() => 
+        Should.Throw<ArgumentException>(() =>
             _fluxoCaixa.ObterRelatorioConsolidado(dataInicio, dataFim));
     }
 
@@ -210,7 +211,7 @@ public class FluxoCaixaTests
     {
         // Arrange - Simula uma semana de operações
         var inicio = DateTime.Today.AddDays(-6);
-        
+
         for (int i = 0; i < 7; i++)
         {
             var data = inicio.AddDays(i);
@@ -225,7 +226,7 @@ public class FluxoCaixaTests
         // Assert
         relatorio.Count.ShouldBe(7);
         _fluxoCaixa.Lancamentos.Count.ShouldBe(14);
-        
+
         // Créditos: 100+200+300+400+500+600+700 = 2800
         // Débitos: 50*7 = 350
         // Saldo: 2800 - 350 = 2450

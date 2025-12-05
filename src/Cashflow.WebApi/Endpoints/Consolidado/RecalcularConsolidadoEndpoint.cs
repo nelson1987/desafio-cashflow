@@ -29,4 +29,3 @@ public class RecalcularConsolidadoEndpoint : IEndpoint
         return result.ToHttpResult();
     }
 }
-

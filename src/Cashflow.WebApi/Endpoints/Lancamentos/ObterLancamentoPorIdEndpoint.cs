@@ -29,4 +29,3 @@ public class ObterLancamentoPorIdEndpoint : IEndpoint
         return result.ToHttpResultWithNotFound();
     }
 }
-

@@ -37,7 +37,7 @@ public class PostgreSqlContainerFixture : IAsyncLifetime
         await context.Database.ExecuteSqlRawAsync("""
             CREATE SCHEMA IF NOT EXISTS cashflow;
             """);
-        
+
         // Cria as tabelas
         await context.Database.EnsureCreatedAsync();
     }

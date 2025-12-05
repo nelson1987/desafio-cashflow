@@ -9,13 +9,13 @@ public class SaldoDiario
 {
     [JsonInclude]
     public DateTime Data { get; private set; }
-    
+
     [JsonInclude]
     public decimal TotalCreditos { get; private set; }
-    
+
     [JsonInclude]
     public decimal TotalDebitos { get; private set; }
-    
+
     [JsonInclude]
     public int QuantidadeLancamentos { get; private set; }
 

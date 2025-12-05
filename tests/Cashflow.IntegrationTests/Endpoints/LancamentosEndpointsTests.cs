@@ -270,9 +270,9 @@ public class LancamentosEndpointsTests : IAsyncLifetime
     #region Helpers
 
     private async Task<LancamentoResponse> CriarLancamentoAsync(
-        decimal valor, 
-        TipoLancamento tipo, 
-        string descricao, 
+        decimal valor,
+        TipoLancamento tipo,
+        string descricao,
         DateTime? data = null)
     {
         var request = new CriarLancamentoRequest
@@ -292,4 +292,3 @@ public class LancamentosEndpointsTests : IAsyncLifetime
 
     #endregion
 }
-

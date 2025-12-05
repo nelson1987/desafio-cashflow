@@ -1,4 +1,5 @@
 using Shouldly;
+
 using Xunit;
 
 namespace Cashflow.Tests;
@@ -11,7 +12,7 @@ public class LancamentoEdgeCasesTests
     public void Criar_ComValorZero_DeveLancarArgumentException()
     {
         // Act & Assert
-        Should.Throw<ArgumentException>(() => 
+        Should.Throw<ArgumentException>(() =>
             new Lancamento(0m, TipoLancamento.Credito, DateTime.Today, "Teste"));
     }
 
@@ -19,7 +20,7 @@ public class LancamentoEdgeCasesTests
     public void Criar_ComValorNegativo_DeveLancarArgumentException()
     {
         // Act & Assert
-        Should.Throw<ArgumentException>(() => 
+        Should.Throw<ArgumentException>(() =>
             new Lancamento(-100m, TipoLancamento.Credito, DateTime.Today, "Teste"));
     }
 
@@ -51,7 +52,7 @@ public class LancamentoEdgeCasesTests
     public void Criar_ComDescricaoVazia_DeveLancarArgumentException()
     {
         // Act & Assert
-        Should.Throw<ArgumentException>(() => 
+        Should.Throw<ArgumentException>(() =>
             new Lancamento(100m, TipoLancamento.Credito, DateTime.Today, ""));
     }
 
@@ -59,7 +60,7 @@ public class LancamentoEdgeCasesTests
     public void Criar_ComDescricaoApenasEspacos_DeveLancarArgumentException()
     {
         // Act & Assert
-        Should.Throw<ArgumentException>(() => 
+        Should.Throw<ArgumentException>(() =>
             new Lancamento(100m, TipoLancamento.Credito, DateTime.Today, "   "));
     }
 
@@ -67,7 +68,7 @@ public class LancamentoEdgeCasesTests
     public void Criar_ComDescricaoNull_DeveLancarArgumentException()
     {
         // Act & Assert
-        Should.Throw<ArgumentException>(() => 
+        Should.Throw<ArgumentException>(() =>
             new Lancamento(100m, TipoLancamento.Credito, DateTime.Today, null!));
     }
 
@@ -216,4 +217,3 @@ public class LancamentoEdgeCasesTests
 
     #endregion
 }
-

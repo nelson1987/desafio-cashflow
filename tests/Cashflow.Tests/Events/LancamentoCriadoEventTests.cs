@@ -1,5 +1,7 @@
 using Cashflow.Events;
+
 using Shouldly;
+
 using Xunit;
 
 namespace Cashflow.Tests.Events;
@@ -51,7 +53,7 @@ public class LancamentoCriadoEventTests
     {
         // Arrange
         var antesDoEvento = DateTime.UtcNow;
-        
+
         // Act
         var evento = new LancamentoCriadoEvent();
         var depoisDoEvento = DateTime.UtcNow;
@@ -79,4 +81,3 @@ public class LancamentoCriadoEventTests
         evento.Tipo.ShouldBe(TipoLancamento.Credito);
     }
 }
-

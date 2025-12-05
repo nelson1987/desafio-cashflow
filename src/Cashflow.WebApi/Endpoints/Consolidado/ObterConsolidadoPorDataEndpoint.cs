@@ -29,4 +29,3 @@ public class ObterConsolidadoPorDataEndpoint : IEndpoint
         return result.ToHttpResult();
     }
 }
-

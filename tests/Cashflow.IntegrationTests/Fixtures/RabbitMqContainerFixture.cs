@@ -34,7 +34,7 @@ public class RabbitMqContainerFixture : IAsyncLifetime
             .WithPassword("test")
             .WithCleanUp(true)
             .Build();
-        
+
         // Usa as mesmas opções de serialização que o RabbitMqPublisher
         _jsonOptions = new JsonSerializerOptions
         {
@@ -142,25 +142,25 @@ public class RabbitMqContainerFixture : IAsyncLifetime
         // Usa BasicGetAsync para consumir uma única mensagem em vez de registrar um consumer
         // Isso evita problemas de múltiplos consumers e race conditions
         var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
-        
+
         while (DateTime.UtcNow < deadline)
         {
             var result = await _channel.BasicGetAsync(TestQueue, autoAck: false);
-            
+
             if (result != null)
             {
                 var body = result.Body.ToArray();
                 var json = Encoding.UTF8.GetString(body);
                 var message = JsonSerializer.Deserialize<T>(json, _jsonOptions);
-                
+
                 await _channel.BasicAckAsync(result.DeliveryTag, false);
                 return message;
             }
-            
+
             // Pequeno delay antes de tentar novamente
             await Task.Delay(50);
         }
-        
+
         return null;
     }
 

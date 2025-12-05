@@ -29,4 +29,3 @@ public class ObterLancamentosPorDataEndpoint : IEndpoint
         return result.ToHttpResult();
     }
 }
-

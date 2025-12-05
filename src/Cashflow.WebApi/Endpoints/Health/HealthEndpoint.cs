@@ -14,4 +14,3 @@ public class HealthEndpoint : IEndpoint
             .WithDescription("Verifica o status de saúde da aplicação e suas dependências");
     }
 }
-

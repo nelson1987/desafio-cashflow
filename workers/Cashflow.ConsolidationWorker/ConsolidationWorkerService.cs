@@ -1,9 +1,13 @@
 using System.Text;
 using System.Text.Json;
+
 using Cashflow.Application.Abstractions;
+
 using Microsoft.Extensions.Options;
+
 using Polly;
 using Polly.Retry;
+
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -30,7 +34,7 @@ public class ConsolidationWorkerService : BackgroundService
         _logger = logger;
         _scopeFactory = scopeFactory;
         _settings = settings.Value;
-        
+
         _resiliencePipeline = new ResiliencePipelineBuilder()
             .AddRetry(new RetryStrategyOptions
             {
@@ -233,4 +237,3 @@ public record LancamentoEventMessage(
     string Tipo,
     string Descricao,
     DateTime Timestamp);
-

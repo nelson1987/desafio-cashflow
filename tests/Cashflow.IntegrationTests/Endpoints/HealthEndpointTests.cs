@@ -43,4 +43,3 @@ public class HealthEndpointTests
         (contentType == "application/json" || contentType == "text/plain").ShouldBeTrue();
     }
 }
-

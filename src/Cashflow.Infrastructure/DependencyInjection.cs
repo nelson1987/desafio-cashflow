@@ -199,7 +199,7 @@ public static class DependencyInjection
     {
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<CashflowDbContext>();
-        
+
         try
         {
             await context.Database.MigrateAsync();
@@ -210,7 +210,7 @@ public static class DependencyInjection
             await context.Database.EnsureCreatedAsync();
         }
     }
-    
+
     /// <summary>
     /// Cria o banco de dados sem usar migrations (para testes)
     /// </summary>

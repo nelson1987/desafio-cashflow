@@ -19,4 +19,3 @@ public record PeriodoQuery
     [FromQuery(Name = "dataFim")]
     public DateTime DataFim { get; init; }
 }
-

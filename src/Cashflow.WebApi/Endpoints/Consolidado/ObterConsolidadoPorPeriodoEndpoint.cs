@@ -30,4 +30,3 @@ public class ObterConsolidadoPorPeriodoEndpoint : IEndpoint
         return result.ToHttpResult();
     }
 }
-

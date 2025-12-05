@@ -19,4 +19,3 @@ public record PaginacaoQuery
     [FromQuery(Name = "tamanhoPagina")]
     public int TamanhoPagina { get; init; } = 10;
 }
-

@@ -91,7 +91,7 @@ public class RabbitMqIntegrationTests : IAsyncLifetime
 
         // Act
         await publisher.PublicarAsync("lancamento.criado", evento);
-        
+
         // Pequeno delay para garantir que a mensagem chegue na fila
         await Task.Delay(100);
 
@@ -296,7 +296,7 @@ public class RabbitMqIntegrationTests : IAsyncLifetime
         };
 
         await _fixture.PublishMessageAsync("test.ack", message);
-        
+
         // Aguarda a mensagem chegar na fila
         await Task.Delay(100);
 
@@ -305,15 +305,15 @@ public class RabbitMqIntegrationTests : IAsyncLifetime
 
         // Assert
         result.ShouldNotBeNull();
-        
+
         var body = result.Body.ToArray();
         var json = Encoding.UTF8.GetString(body);
         var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
         var receivedMessage = JsonSerializer.Deserialize<TestMessage>(json, jsonOptions);
-        
+
         receivedMessage.ShouldNotBeNull();
         receivedMessage.Id.ShouldBe(message.Id);
-        
+
         await channel.BasicAckAsync(result.DeliveryTag, false);
 
         await channel.CloseAsync();

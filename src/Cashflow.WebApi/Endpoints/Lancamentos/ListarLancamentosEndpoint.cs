@@ -30,4 +30,3 @@ public class ListarLancamentosEndpoint : IEndpoint
         return result.ToHttpResult();
     }
 }
-

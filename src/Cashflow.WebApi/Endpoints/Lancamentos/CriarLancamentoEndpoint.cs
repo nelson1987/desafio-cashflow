@@ -29,4 +29,3 @@ public class CriarLancamentoEndpoint : IEndpoint
         return result.ToCreatedResult($"/api/lancamentos/{result.Value?.Id}");
     }
 }
-
