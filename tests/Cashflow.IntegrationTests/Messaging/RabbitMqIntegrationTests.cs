@@ -91,6 +91,9 @@ public class RabbitMqIntegrationTests : IAsyncLifetime
 
         // Act
         await publisher.PublicarAsync("lancamento.criado", evento);
+        
+        // Pequeno delay para garantir que a mensagem chegue na fila
+        await Task.Delay(100);
 
         // Assert
         var receivedEvent = await _fixture.ConsumeMessageAsync<LancamentoCriadoEvent>();
@@ -293,39 +296,25 @@ public class RabbitMqIntegrationTests : IAsyncLifetime
         };
 
         await _fixture.PublishMessageAsync("test.ack", message);
+        
+        // Aguarda a mensagem chegar na fila
+        await Task.Delay(100);
 
-        // Act
-        var tcs = new TaskCompletionSource<TestMessage?>();
-        var consumer = new AsyncEventingBasicConsumer(channel);
-
-        consumer.ReceivedAsync += async (model, ea) =>
-        {
-            var body = ea.Body.ToArray();
-            var json = Encoding.UTF8.GetString(body);
-            var receivedMessage = JsonSerializer.Deserialize<TestMessage>(json);
-
-            await channel.BasicAckAsync(ea.DeliveryTag, false);
-            tcs.SetResult(receivedMessage);
-        };
-
-        await channel.BasicConsumeAsync(
-            queue: RabbitMqContainerFixture.TestQueue,
-            autoAck: false,
-            consumer: consumer);
-
-        var result = await Task.WhenAny(tcs.Task, Task.Delay(5000));
+        // Act - Usa BasicGet para consumir a mensagem
+        var result = await channel.BasicGetAsync(RabbitMqContainerFixture.TestQueue, autoAck: false);
 
         // Assert
-        if (result == tcs.Task)
-        {
-            var received = await tcs.Task;
-            received.ShouldNotBeNull();
-            received.Id.ShouldBe(message.Id);
-        }
-        else
-        {
-            throw new TimeoutException("Timeout ao aguardar mensagem");
-        }
+        result.ShouldNotBeNull();
+        
+        var body = result.Body.ToArray();
+        var json = Encoding.UTF8.GetString(body);
+        var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var receivedMessage = JsonSerializer.Deserialize<TestMessage>(json, jsonOptions);
+        
+        receivedMessage.ShouldNotBeNull();
+        receivedMessage.Id.ShouldBe(message.Id);
+        
+        await channel.BasicAckAsync(result.DeliveryTag, false);
 
         await channel.CloseAsync();
         channel.Dispose();

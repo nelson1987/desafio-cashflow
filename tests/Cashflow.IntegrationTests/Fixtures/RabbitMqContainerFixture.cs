@@ -1,12 +1,7 @@
 using System.Text;
 using System.Text.Json;
 
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-
 using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
 
 using Testcontainers.RabbitMq;
 
@@ -18,6 +13,7 @@ namespace Cashflow.IntegrationTests.Fixtures;
 public class RabbitMqContainerFixture : IAsyncLifetime
 {
     private readonly RabbitMqContainer _container;
+    private readonly JsonSerializerOptions _jsonOptions;
     private IConnection? _connection;
     private IChannel? _channel;
 
@@ -32,6 +28,13 @@ public class RabbitMqContainerFixture : IAsyncLifetime
             .WithPassword("test")
             .WithCleanUp(true)
             .Build();
+        
+        // Usa as mesmas opções de serialização que o RabbitMqPublisher
+        _jsonOptions = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            PropertyNameCaseInsensitive = true
+        };
     }
 
     public string ConnectionString => _container.GetConnectionString();
@@ -107,7 +110,7 @@ public class RabbitMqContainerFixture : IAsyncLifetime
         if (_channel == null)
             throw new InvalidOperationException("Channel not initialized");
 
-        var json = JsonSerializer.Serialize(message);
+        var json = JsonSerializer.Serialize(message, _jsonOptions);
         var body = Encoding.UTF8.GetBytes(json);
 
         var properties = new BasicProperties
@@ -130,28 +133,29 @@ public class RabbitMqContainerFixture : IAsyncLifetime
         if (_channel == null)
             throw new InvalidOperationException("Channel not initialized");
 
-        var tcs = new TaskCompletionSource<T?>();
-        using var cts = new CancellationTokenSource(timeoutMs);
-
-        cts.Token.Register(() => tcs.TrySetResult(null));
-
-        var consumer = new AsyncEventingBasicConsumer(_channel);
-        consumer.ReceivedAsync += async (model, ea) =>
+        // Usa BasicGetAsync para consumir uma única mensagem em vez de registrar um consumer
+        // Isso evita problemas de múltiplos consumers e race conditions
+        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+        
+        while (DateTime.UtcNow < deadline)
         {
-            var body = ea.Body.ToArray();
-            var json = Encoding.UTF8.GetString(body);
-            var message = JsonSerializer.Deserialize<T>(json);
-
-            await _channel.BasicAckAsync(ea.DeliveryTag, false);
-            tcs.TrySetResult(message);
-        };
-
-        await _channel.BasicConsumeAsync(
-            queue: TestQueue,
-            autoAck: false,
-            consumer: consumer);
-
-        return await tcs.Task;
+            var result = await _channel.BasicGetAsync(TestQueue, autoAck: false);
+            
+            if (result != null)
+            {
+                var body = result.Body.ToArray();
+                var json = Encoding.UTF8.GetString(body);
+                var message = JsonSerializer.Deserialize<T>(json, _jsonOptions);
+                
+                await _channel.BasicAckAsync(result.DeliveryTag, false);
+                return message;
+            }
+            
+            // Pequeno delay antes de tentar novamente
+            await Task.Delay(50);
+        }
+        
+        return null;
     }
 
     public async Task PurgeQueueAsync()

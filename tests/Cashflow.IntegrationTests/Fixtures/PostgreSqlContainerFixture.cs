@@ -31,10 +31,16 @@ public class PostgreSqlContainerFixture : IAsyncLifetime
     {
         await _container.StartAsync();
 
-        // Cria o schema e tabelas
+        // Cria a extensão uuid-ossp ANTES de criar o schema
+        // pois as tabelas usam uuid_generate_v4() como valor padrão
         await using var context = CreateDbContext();
+        await context.Database.ExecuteSqlRawAsync("""
+            CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+            CREATE SCHEMA IF NOT EXISTS cashflow;
+            """);
+        
+        // Agora cria as tabelas (a extensão já existe)
         await context.Database.EnsureCreatedAsync();
-        await InitializeSchemaAsync();
     }
 
     public async Task DisposeAsync()
@@ -65,40 +71,6 @@ public class PostgreSqlContainerFixture : IAsyncLifetime
         });
 
         return services;
-    }
-
-    private async Task InitializeSchemaAsync()
-    {
-        const string initSql = """
-            CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-            
-            CREATE SCHEMA IF NOT EXISTS cashflow;
-            
-            CREATE TABLE IF NOT EXISTS cashflow.lancamentos (
-                id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-                valor DECIMAL(18, 2) NOT NULL CHECK (valor > 0),
-                tipo SMALLINT NOT NULL CHECK (tipo IN (1, 2)),
-                data TIMESTAMP NOT NULL,
-                descricao VARCHAR(500) NOT NULL,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-            );
-            
-            CREATE TABLE IF NOT EXISTS cashflow.saldos_consolidados (
-                data DATE PRIMARY KEY,
-                total_creditos DECIMAL(18, 2) NOT NULL DEFAULT 0,
-                total_debitos DECIMAL(18, 2) NOT NULL DEFAULT 0,
-                saldo DECIMAL(18, 2) NOT NULL DEFAULT 0,
-                quantidade_lancamentos INT NOT NULL DEFAULT 0,
-                processado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-            );
-            
-            CREATE INDEX IF NOT EXISTS idx_lancamentos_data ON cashflow.lancamentos(data);
-            CREATE INDEX IF NOT EXISTS idx_lancamentos_tipo ON cashflow.lancamentos(tipo);
-            """;
-
-        await using var context = CreateDbContext();
-        await context.Database.ExecuteSqlRawAsync(initSql);
     }
 }
 

@@ -32,7 +32,8 @@ public class RedisContainerFixture : IAsyncLifetime
     public async Task InitializeAsync()
     {
         await _container.StartAsync();
-        _connection = await ConnectionMultiplexer.ConnectAsync(ConnectionString);
+        // allowAdmin=true é necessário para comandos administrativos como FLUSHDB
+        _connection = await ConnectionMultiplexer.ConnectAsync($"{ConnectionString},allowAdmin=true");
     }
 
     public async Task DisposeAsync()
