@@ -32,6 +32,7 @@ public class IntegrationTestFixture : IAsyncLifetime
     {
         PostgreSql.ConfigureServices(services);
         Redis.ConfigureServices(services);
+        RabbitMq.ConfigureServices(services);
         return services;
     }
 }

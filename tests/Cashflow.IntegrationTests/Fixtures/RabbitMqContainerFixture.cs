@@ -1,6 +1,12 @@
 using System.Text;
 using System.Text.Json;
 
+using Cashflow.Abstractions;
+using Cashflow.Infrastructure.Messaging;
+
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+
 using RabbitMQ.Client;
 
 using Testcontainers.RabbitMq;
@@ -175,6 +181,29 @@ public class RabbitMqContainerFixture : IAsyncLifetime
             UserName = Username,
             Password = Password
         };
+    }
+
+    public IServiceCollection ConfigureServices(IServiceCollection services)
+    {
+        // Remove o publisher original
+        services.RemoveAll<IMessagePublisher>();
+
+        // Configura as settings do RabbitMQ com os dados do container de teste
+        services.Configure<RabbitMqSettings>(opts =>
+        {
+            opts.Host = Host;
+            opts.Port = Port;
+            opts.Username = Username;
+            opts.Password = Password;
+            opts.VirtualHost = "/";
+            opts.Exchange = TestExchange;
+            opts.ExchangeType = "topic";
+        });
+
+        // Re-registra o publisher com as novas configurações
+        services.AddSingleton<IMessagePublisher, RabbitMqPublisher>();
+
+        return services;
     }
 }
 
