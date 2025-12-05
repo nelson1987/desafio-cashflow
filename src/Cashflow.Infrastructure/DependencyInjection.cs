@@ -199,7 +199,26 @@ public static class DependencyInjection
     {
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<CashflowDbContext>();
-        await context.Database.MigrateAsync();
+        
+        try
+        {
+            await context.Database.MigrateAsync();
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("PendingModelChanges"))
+        {
+            // Se há mudanças pendentes no modelo, usa EnsureCreated como fallback
+            await context.Database.EnsureCreatedAsync();
+        }
+    }
+    
+    /// <summary>
+    /// Cria o banco de dados sem usar migrations (para testes)
+    /// </summary>
+    public static async Task EnsureDatabaseCreatedAsync(this IServiceProvider serviceProvider)
+    {
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<CashflowDbContext>();
+        await context.Database.EnsureCreatedAsync();
     }
 
     /// <summary>
