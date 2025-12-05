@@ -1,13 +1,20 @@
 # ============================================
-# Cashflow - Performance Tests Pipeline
+# Cashflow - Performance Tests
 # ============================================
-# Executa testes de performance com K6
-# Trigger: manual ou após release
+# Dispara automaticamente após o CI passar
 # ============================================
 
 name: Performance Tests
 
 on:
+  # Dispara após o CI/CD Pipeline completar com sucesso
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types:
+      - completed
+    branches: [main]
+
+  # Permite execução manual
   workflow_dispatch:
     inputs:
       test_type:
@@ -19,25 +26,16 @@ on:
           - smoke
           - load
           - stress
-      duration:
-        description: 'Duração (ex: 1m, 5m)'
-        required: false
-        default: '1m'
-
-  # Executa após release (opcional)
-  release:
-    types: [published]
 
 env:
   DOTNET_VERSION: "9.0.x"
 
 jobs:
-  # ==========================================
-  # 🚀 Setup e Start da Aplicação
-  # ==========================================
-  performance-test:
-    name: K6 Performance Test
+  performance-tests:
+    name: K6 Performance Tests
     runs-on: ubuntu-latest
+    # Só roda se o CI passou com sucesso
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
 
     services:
       postgres:
@@ -72,7 +70,6 @@ jobs:
           RABBITMQ_DEFAULT_VHOST: cashflow
         ports:
           - 5672:5672
-          - 15672:15672
         options: >-
           --health-cmd "rabbitmq-diagnostics -q ping"
           --health-interval 10s
@@ -88,17 +85,16 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: 📥 Restore de dependências
-        run: dotnet restore Cashflow.sln
+      - name: 📥 Restore e Build
+        run: |
+          dotnet restore Cashflow.sln
+          dotnet build src/Cashflow.WebApi --configuration Release --no-restore
 
-      - name: 🏗️ Build
-        run: dotnet build src/Cashflow.WebApi --configuration Release --no-restore
-
-      - name: 🚀 Start API
+      - name: 🚀 Iniciar API em background
         run: |
           cd src/Cashflow.WebApi
-          dotnet run --configuration Release --no-build &
-          sleep 10
+          nohup dotnet run --configuration Release --no-build > /tmp/api.log 2>&1 &
+          echo $! > /tmp/api.pid
         env:
           ASPNETCORE_URLS: http://localhost:5000
           ConnectionStrings__PostgreSQL: "Host=localhost;Port=5432;Database=cashflow_db;Username=cashflow;Password=cashflow123"
@@ -109,37 +105,38 @@ jobs:
           RabbitMQ__Password: cashflow123
           RabbitMQ__VirtualHost: cashflow
 
-      - name: ⏳ Aguardar API
+      - name: ⏳ Aguardar API ficar pronta
         run: |
+          echo "Aguardando API iniciar..."
           for i in {1..30}; do
-            if curl -s http://localhost:5000/health | grep -q "Healthy"; then
+            if curl -s http://localhost:5000/health > /dev/null 2>&1; then
               echo "✅ API está pronta!"
               exit 0
             fi
-            echo "Aguardando API... ($i/30)"
+            echo "Tentativa $i/30..."
             sleep 2
           done
           echo "❌ API não iniciou a tempo"
+          cat /tmp/api.log
           exit 1
 
       - name: 🔧 Setup K6
         uses: grafana/setup-k6-action@v1
 
       - name: 🔥 Smoke Test
-        if: github.event.inputs.test_type == 'smoke' || github.event_name == 'release'
         run: k6 run tests/k6/smoke-test.js
         env:
           BASE_URL: http://localhost:5000
 
-      - name: 📊 Load Test - Consolidado
-        if: github.event.inputs.test_type == 'load'
-        run: k6 run tests/k6/consolidado-load-test.js
+      - name: 📊 Load Test - Consolidado (55 RPS)
+        if: github.event.inputs.test_type == 'load' || github.event_name == 'workflow_run'
+        run: k6 run tests/k6/consolidado-load-test.js --out json=k6-results.json
         env:
           BASE_URL: http://localhost:5000
 
       - name: 💪 Stress Test
         if: github.event.inputs.test_type == 'stress'
-        run: k6 run tests/k6/stress-test.js
+        run: k6 run tests/k6/stress-test.js --out json=k6-stress-results.json
         env:
           BASE_URL: http://localhost:5000
 
@@ -147,9 +144,15 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: k6-results
+          name: k6-performance-results
           path: |
-            *.json
-            *.html
-          retention-days: 7
+            k6-results.json
+            k6-stress-results.json
+          retention-days: 30
 
+      - name: 🛑 Parar API
+        if: always()
+        run: |
+          if [ -f /tmp/api.pid ]; then
+            kill $(cat /tmp/api.pid) || true
+          fi

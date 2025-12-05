@@ -10,6 +10,7 @@ Este documento descreve a estratégia de testes adotada no projeto Cashflow, inc
 | **Shouldly** | Assertions fluentes | 4.3.0 |
 | **Moq** | Mocking framework | 4.20.72 |
 | **Testcontainers** | Containers para integração | 4.3.0 |
+| **K6** | Testes de performance | latest |
 | **Coverlet** | Cobertura de código | 6.0.2 |
 
 ## 📐 Pirâmide de Testes
@@ -17,23 +18,23 @@ Este documento descreve a estratégia de testes adotada no projeto Cashflow, inc
 ```mermaid
 graph TB
     subgraph Pirâmide["Pirâmide de Testes"]
-        E2E["🔺 E2E / Performance<br/>(K6 - Planejado)"]
+        Perf["🔺 Performance<br/>(K6 - 55 RPS)"]
         Integration["🔸 Integração<br/>(55 testes)"]
         Unit["🟢 Unitários<br/>(80 testes)"]
     end
     
-    E2E --> Integration
+    Perf --> Integration
     Integration --> Unit
     
     style Unit fill:#90EE90
     style Integration fill:#FFE4B5
-    style E2E fill:#FFB6C1
+    style Perf fill:#87CEEB
 ```
 
 **Situação Atual:**
 - ✅ **Testes Unitários**: 80 testes (Domínio + Application)
 - ✅ **Testes de Integração**: 55 testes (Testcontainers)
-- ⏳ **Testes de Performance**: Planejados com K6 (50 req/s)
+- ✅ **Testes de Performance**: K6 (55 RPS, P95 < 100ms)
 
 ## 📊 Resumo de Cobertura
 
@@ -42,7 +43,8 @@ graph TB
 | `Cashflow.Tests` | 26 | Unitário (Domínio) |
 | `Cashflow.Application.Tests` | 54 | Unitário (Application) |
 | `Cashflow.IntegrationTests` | 55 | Integração (API + DB) |
-| **Total** | **135** | - |
+| `tests/k6` | 4 scripts | Performance (K6) |
+| **Total** | **135 + K6** | - |
 
 ### Por Camada
 
@@ -313,39 +315,75 @@ tests/
 | **Cache** | Operações com Redis real |
 | **Health** | Health checks funcionando |
 
-## 🔮 Evolução Futura
+## 🚀 Testes de Performance (K6)
 
-### Testes de Performance (K6)
+Os testes de performance validam os requisitos não-funcionais usando K6.
 
-Planejados para validar os requisitos não-funcionais:
+### Scripts Disponíveis
+
+| Script | Descrição | Requisitos |
+|--------|-----------|------------|
+| `smoke-test.js` | Validação rápida (30s) | API funcionando |
+| `consolidado-load-test.js` | Carga sustentada 55 RPS | P95 < 100ms |
+| `lancamentos-load-test.js` | CRUD misto (70% leitura) | - |
+| `stress-test.js` | Encontrar limite da API | - |
+
+### Configuração Principal
 
 ```javascript
-// k6/load-test.js
-import http from 'k6/http';
-import { check } from 'k6';
-
+// consolidado-load-test.js
 export const options = {
-    vus: 10,
-    duration: '30s',
+    scenarios: {
+        sustained_load: {
+            executor: 'constant-arrival-rate',
+            rate: 55,                    // 55 RPS (10% acima do requisito)
+            timeUnit: '1s',
+            duration: '2m',
+        },
+    },
     thresholds: {
-        http_req_duration: ['p(95)<100'],  // 95% < 100ms
-        http_req_failed: ['rate<0.05'],    // < 5% falhas
+        'http_req_duration': ['p(95)<100'],  // 95% < 100ms
+        'http_req_failed': ['rate<0.05'],    // < 5% falhas
     },
 };
-
-export default function () {
-    const res = http.get('http://localhost:5000/api/consolidado/2024-01-15');
-    check(res, {
-        'status is 200': (r) => r.status === 200,
-        'response time < 100ms': (r) => r.timings.duration < 100,
-    });
-}
 ```
 
-**Metas:**
-- 50 requisições/segundo no consolidado
-- Tempo de resposta < 100ms (P95)
-- Taxa de erro < 5%
+### Como Executar
+
+```bash
+# Instalar K6
+winget install k6 --source winget
+
+# Smoke test (rápido)
+k6 run tests/k6/smoke-test.js
+
+# Load test (55 RPS)
+k6 run tests/k6/consolidado-load-test.js
+
+# Stress test
+k6 run tests/k6/stress-test.js
+```
+
+### CI/CD
+
+Os testes K6 rodam automaticamente no GitHub Actions após o CI passar na branch `main`:
+
+```yaml
+# .github/workflows/performance.yml
+on:
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types: [completed]
+    branches: [main]
+```
+
+### Metas de Performance
+
+| Métrica | Requisito | Testado |
+|---------|-----------|---------|
+| **Throughput** | 50 RPS | 55 RPS ✅ |
+| **Latência P95** | < 100ms | ✅ |
+| **Taxa de Erro** | < 5% | ✅ |
 
 ## 📚 Referências
 

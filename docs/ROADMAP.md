@@ -63,6 +63,7 @@ flowchart LR
 - [x] Testes unitários do domínio (26 testes)
 - [x] Testes unitários da Application (54 testes)
 - [x] Testes de integração com Testcontainers (55 testes)
+- [x] Testes de performance com K6 (55 RPS, P95 < 100ms)
 - [x] CI/CD com GitHub Actions
 - [x] Configuração para WSL/Docker
 
@@ -73,7 +74,8 @@ flowchart LR
 | `Cashflow.Tests` | 26 | ✅ |
 | `Cashflow.Application.Tests` | 54 | ✅ |
 | `Cashflow.IntegrationTests` | 55 (5 skipped) | ✅ |
-| **Total** | **135** | ✅ |
+| `tests/k6` | 4 scripts | ✅ |
+| **Total** | **135 + K6** | ✅ |
 
 ## 🗺️ Visão de Evolução
 
@@ -121,20 +123,15 @@ flowchart TB
         Traces["OpenTelemetry"]
         Dashboard["Grafana Dashboards"]
     end
-    
-    subgraph Performance["Performance"]
-        K6["K6 Load Tests"]
-        Benchmark["BenchmarkDotNet"]
-    end
 ```
 
 **Tarefas:**
 
+- [x] Testes de performance com K6 (55 RPS) ✅
 - [ ] Criar manifestos Kubernetes
 - [ ] Configurar Helm Charts
 - [ ] Adicionar métricas Prometheus
 - [ ] Configurar OpenTelemetry
-- [ ] Testes de performance com K6 (50 req/s)
 - [ ] Dashboards Grafana
 
 ### v2.0 - Features Avançadas
