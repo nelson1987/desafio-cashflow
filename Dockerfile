@@ -11,8 +11,9 @@ WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
-# Adiciona usuário não-root para segurança
-RUN adduser -D -h /app appuser && \
+# Instala ICU para suporte a globalização e adiciona usuário não-root
+RUN apk add --no-cache icu-libs && \
+    adduser -D -h /app appuser && \
     chown -R appuser:appuser /app
 USER appuser
 

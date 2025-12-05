@@ -14,7 +14,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: build
+      # Usa o stage 'final' que tem o ENTRYPOINT configurado
     container_name: cashflow-api
     restart: unless-stopped
     environment:
@@ -29,9 +29,6 @@ services:
       - RabbitMQ__VirtualHost=${RABBITMQ_VHOST:-cashflow}
     ports:
       - "${API_PORT:-5000}:8080"
-    volumes:
-      - .:/src:ro
-      - ~/.nuget/packages:/root/.nuget/packages:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -51,7 +48,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.worker
-      target: build
+      # Usa o stage 'final' que tem o ENTRYPOINT configurado
     container_name: cashflow-worker
     restart: unless-stopped
     environment:
@@ -63,9 +60,6 @@ services:
       - RabbitMQ__Username=${RABBITMQ_USER:-cashflow}
       - RabbitMQ__Password=${RABBITMQ_PASSWORD:-cashflow123}
       - RabbitMQ__VirtualHost=${RABBITMQ_VHOST:-cashflow}
-    volumes:
-      - .:/src:ro
-      - ~/.nuget/packages:/root/.nuget/packages:ro
     depends_on:
       postgres:
         condition: service_healthy
