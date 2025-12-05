@@ -287,6 +287,7 @@ jobs:
           echo $! > /tmp/api.pid
         env:
           ASPNETCORE_URLS: http://localhost:5000
+          ASPNETCORE_ENVIRONMENT: Development
           ConnectionStrings__PostgreSQL: "Host=localhost;Port=5432;Database=cashflow_db;Username=cashflow;Password=cashflow123"
           ConnectionStrings__Redis: "localhost:6379"
           RabbitMQ__Host: localhost
@@ -294,6 +295,7 @@ jobs:
           RabbitMQ__Username: cashflow
           RabbitMQ__Password: cashflow123
           RabbitMQ__VirtualHost: cashflow
+          Database__ApplyMigrationsOnStartup: "true"
 
       - name: ⏳ Aguardar API ficar pronta
         run: |

@@ -55,6 +55,15 @@ builder.Services.AddProblemDetails();
 var app = builder.Build();
 
 // ========================================
+// Aplicar Migrations (se configurado)
+// ========================================
+var databaseSettings = builder.Configuration.GetSection("Database");
+if (databaseSettings.GetValue<bool>("ApplyMigrationsOnStartup"))
+{
+    await app.Services.ApplyMigrationsAsync();
+}
+
+// ========================================
 // Configuração do Pipeline HTTP
 // ========================================
 
