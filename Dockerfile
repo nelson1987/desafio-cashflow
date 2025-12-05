@@ -34,6 +34,7 @@ COPY ["src/Cashflow.Infrastructure/Cashflow.Infrastructure.csproj", "src/Cashflo
 COPY ["tests/Cashflow.Tests/Cashflow.Tests.csproj", "tests/Cashflow.Tests/"]
 COPY ["tests/Cashflow.Application.Tests/Cashflow.Application.Tests.csproj", "tests/Cashflow.Application.Tests/"]
 COPY ["tests/Cashflow.IntegrationTests/Cashflow.IntegrationTests.csproj", "tests/Cashflow.IntegrationTests/"]
+COPY ["workers/Cashflow.ConsolidationWorker/Cashflow.ConsolidationWorker.csproj", "workers/Cashflow.ConsolidationWorker/"]
 
 # Restore de dependências (layer cacheada)
 RUN dotnet restore "Cashflow.sln"
