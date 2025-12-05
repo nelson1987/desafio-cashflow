@@ -341,6 +341,28 @@ docker system prune -af
 docker compose up -d
 ```
 
+### Container crashando com código 139 (ICU Error)
+
+Se o container da API ou Worker ficar reiniciando com exit code 139 e o log mostrar:
+
+```
+Couldn't find a valid ICU package installed on the system
+```
+
+Isso significa que a biblioteca ICU não está instalada no Alpine. Verifique se o Dockerfile contém:
+
+```dockerfile
+RUN apk add --no-cache icu-libs && \
+    adduser -D -h /app appuser && \
+    chown -R appuser:appuser /app
+```
+
+Após corrigir, reconstrua as imagens:
+
+```bash
+docker compose --profile app up -d --build --force-recreate
+```
+
 ## 📊 Monitoramento
 
 ### Grafana (Métricas, Logs, Traces)

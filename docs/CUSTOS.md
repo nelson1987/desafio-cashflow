@@ -2,13 +2,16 @@
 
 Este documento apresenta a análise de custos de licenças e infraestrutura para o projeto Cashflow.
 
+> **Última atualização:** Dezembro 2024
+
 ## 📋 Resumo Executivo
 
 | Tipo de Custo | Valor |
 |---------------|-------|
 | **Licenças de Software** | **$0/mês** |
-| **Infraestrutura GCP (Dev)** | ~$170/mês |
-| **Infraestrutura GCP (Prod)** | ~$695-1.555/mês |
+| **Local (Docker)** | **$0/mês** |
+| **Cloud (Dev)** | ~$50-170/mês |
+| **Cloud (Prod)** | ~$200-1.500/mês |
 
 ---
 
@@ -16,35 +19,23 @@ Este documento apresenta a análise de custos de licenças e infraestrutura para
 
 ### Stack 100% Open Source
 
-```mermaid
-flowchart TB
-    subgraph Free["✅ Open Source / Gratuito"]
-        NET[".NET 9 / ASP.NET<br/>MIT License"]
-        PG["PostgreSQL<br/>PostgreSQL License"]
-        Redis["Redis<br/>BSD 3-Clause"]
-        RMQ["RabbitMQ / Pub/Sub<br/>MPL 2.0"]
-        Docker["Docker Engine<br/>Apache 2.0"]
-        K8s["Kubernetes<br/>Apache 2.0"]
-        Polly["Polly<br/>BSD 3-Clause"]
-    end
-```
-
-### Tabela de Licenças
-
-| Ferramenta | Licença | Custo | Observação |
-|------------|---------|-------|------------|
-| **.NET 9 / ASP.NET** | MIT | **$0** | Open Source da Microsoft |
-| **PostgreSQL** | PostgreSQL License | **$0** | Open Source |
-| **Redis** | BSD 3-Clause | **$0** | Open Source |
-| **RabbitMQ** | MPL 2.0 | **$0** | Open Source (VMware) |
-| **Docker Engine** | Apache 2.0 | **$0** | Open Source |
-| **Kubernetes** | Apache 2.0 | **$0** | Open Source (CNCF) |
-| **Polly** | BSD 3-Clause | **$0** | Open Source |
-| **MediatR** | Apache 2.0 | **$0** | Open Source |
-| **FluentValidation** | Apache 2.0 | **$0** | Open Source |
-| **Serilog** | Apache 2.0 | **$0** | Open Source |
-| **xUnit** | Apache 2.0 | **$0** | Open Source |
-| **Shouldly** | BSD | **$0** | Open Source |
+| Ferramenta | Licença | Custo | Uso no Projeto |
+|------------|---------|-------|----------------|
+| **.NET 9 / ASP.NET** | MIT | **$0** | Runtime + API |
+| **PostgreSQL** | PostgreSQL License | **$0** | Banco de dados |
+| **Redis** | BSD 3-Clause | **$0** | Cache distribuído |
+| **RabbitMQ** | MPL 2.0 | **$0** | Mensageria |
+| **Docker Engine** | Apache 2.0 | **$0** | Containers |
+| **Kubernetes** | Apache 2.0 | **$0** | Orquestração |
+| **Polly** | BSD 3-Clause | **$0** | Resiliência |
+| **FluentValidation** | Apache 2.0 | **$0** | Validações |
+| **Serilog** | Apache 2.0 | **$0** | Logging |
+| **xUnit + Shouldly** | Apache 2.0 / BSD | **$0** | Testes |
+| **OpenTelemetry** | Apache 2.0 | **$0** | Tracing |
+| **Prometheus** | Apache 2.0 | **$0** | Métricas |
+| **Grafana OSS** | AGPL v3 | **$0** | Dashboards |
+| **Loki** | AGPL v3 | **$0** | Logs |
+| **Jaeger** | Apache 2.0 | **$0** | Traces |
 
 ### ⚠️ Docker Desktop - Atenção!
 
@@ -53,59 +44,101 @@ flowchart TB
 | < 250 funcionários **E** < $10M receita | Gratuito | **$0** |
 | ≥ 250 funcionários **OU** ≥ $10M receita | Business | **$24/usuário/mês** |
 
-**Alternativas gratuitas ao Docker Desktop:**
-- **Podman** - 100% gratuito, compatível com Docker
-- **Rancher Desktop** - Gratuito
-- **Colima** (macOS) - Gratuito
-- **Docker Engine** direto no Linux - Gratuito
+**Alternativas 100% gratuitas:**
+- **Docker Engine** no WSL/Linux - O que usamos!
+- **Podman** - Compatível com Docker
+- **Rancher Desktop** - Interface gráfica gratuita
 
 ---
 
-## ☁️ Custos de Infraestrutura - Google Cloud Platform
+## 🏠 Custo Local (Docker Compose)
 
-### Arquitetura no GCP
+### Execução Local
 
-```mermaid
-flowchart TB
-    subgraph GCP["☁️ Google Cloud Platform"]
-        subgraph Network["Rede"]
-            LB["⚖️ Cloud Load Balancer"]
-        end
-        
-        subgraph Compute["Compute"]
-            GKE["🐳 GKE Autopilot<br/>(Kubernetes)"]
-        end
-        
-        subgraph Messaging["Mensageria"]
-            PubSub["📨 Cloud Pub/Sub"]
-        end
-        
-        subgraph Database["Banco de Dados"]
-            CloudSQL["🗄️ Cloud SQL<br/>(PostgreSQL)"]
-        end
-        
-        subgraph Cache["Cache"]
-            Memorystore["⚡ Memorystore<br/>(Redis)"]
-        end
-        
-        subgraph Storage["Armazenamento"]
-            GCS["📦 Cloud Storage"]
-        end
-    end
-    
-    Users["👥 Usuários"] --> LB
-    LB --> GKE
-    GKE --> PubSub
-    GKE --> CloudSQL
-    GKE --> Memorystore
-    GKE --> GCS
-```
+| Recurso | Custo |
+|---------|-------|
+| Docker Engine | **$0** |
+| PostgreSQL (container) | **$0** |
+| Redis (container) | **$0** |
+| RabbitMQ (container) | **$0** |
+| Grafana (container) | **$0** |
+| Prometheus (container) | **$0** |
+| Loki (container) | **$0** |
+| Jaeger (container) | **$0** |
+| **TOTAL** | **$0/mês** |
+
+> 💡 **Requisito:** Máquina com pelo menos 8GB RAM e Docker instalado.
 
 ---
 
-## 💵 Estimativa por Ambiente
+## ☁️ Opções de Hospedagem Cloud
 
-### 🧪 Ambiente de Desenvolvimento
+### Comparativo de Plataformas
+
+| Plataforma | Tipo | Dev | Prod Básico | Observação |
+|------------|------|-----|-------------|------------|
+| **Railway** | PaaS | ~$5-20 | ~$50-150 | Mais simples |
+| **Render** | PaaS | ~$7-25 | ~$50-200 | Boa opção |
+| **Fly.io** | PaaS | ~$5-15 | ~$30-100 | Mais barato |
+| **DigitalOcean** | IaaS | ~$24-50 | ~$100-300 | App Platform |
+| **AWS** | IaaS | ~$50-150 | ~$300-800 | Mais complexo |
+| **GCP** | IaaS | ~$50-170 | ~$300-1.000 | GKE Autopilot |
+| **Azure** | IaaS | ~$50-150 | ~$300-800 | AKS |
+
+---
+
+## 🚂 Railway (Recomendado para Começar)
+
+### Ambiente de Desenvolvimento
+
+| Serviço | Configuração | Custo/mês |
+|---------|--------------|-----------|
+| **API** | 512MB RAM | ~$5 |
+| **Worker** | 512MB RAM | ~$5 |
+| **PostgreSQL** | 1GB | ~$7 |
+| **Redis** | 256MB | ~$3 |
+| **RabbitMQ** | Plugin | ~$0 (usar Redis como fila) |
+| **TOTAL DEV** | | **~$20/mês** |
+
+### Ambiente de Produção
+
+| Serviço | Configuração | Custo/mês |
+|---------|--------------|-----------|
+| **API** | 2GB RAM, 2 réplicas | ~$40 |
+| **Worker** | 1GB RAM | ~$10 |
+| **PostgreSQL** | 4GB, backups | ~$25 |
+| **Redis** | 1GB | ~$10 |
+| **TOTAL PROD** | | **~$85/mês** |
+
+---
+
+## 🪰 Fly.io (Mais Econômico)
+
+### Ambiente de Desenvolvimento
+
+| Serviço | Configuração | Custo/mês |
+|---------|--------------|-----------|
+| **API** | shared-cpu-1x, 256MB | ~$2 |
+| **Worker** | shared-cpu-1x, 256MB | ~$2 |
+| **PostgreSQL** | 1GB (Fly Postgres) | ~$7 |
+| **Redis** | Upstash (serverless) | ~$0-5 |
+| **TOTAL DEV** | | **~$15/mês** |
+
+### Ambiente de Produção
+
+| Serviço | Configuração | Custo/mês |
+|---------|--------------|-----------|
+| **API** | dedicated-cpu-1x, 1GB, 2 réplicas | ~$30 |
+| **Worker** | shared-cpu-1x, 512MB | ~$5 |
+| **PostgreSQL** | 2GB HA | ~$20 |
+| **Redis** | Upstash Pro | ~$10 |
+| **TOTAL PROD** | | **~$65/mês** |
+
+---
+
+## ☁️ Google Cloud Platform (Produção Escalável)
+
+### Ambiente de Desenvolvimento
 
 | Serviço | Configuração | Custo/mês |
 |---------|--------------|-----------|
@@ -113,219 +146,170 @@ flowchart TB
 | **Cloud SQL** | 1 vCPU, 3.75GB, 20GB SSD | ~$35 |
 | **Memorystore Redis** | 1GB Basic | ~$35 |
 | **Cloud Pub/Sub** | < 10GB/mês | ~$0 (free tier) |
-| **Cloud Storage** | 10GB | ~$0.20 |
 | **Load Balancer** | 1 regra | ~$18 |
-| **Rede (egress)** | ~10GB | ~$1 |
-
 | **TOTAL DEV** | | **~$170/mês** |
-|---------------|---|---------------|
 
----
-
-### 🚀 Ambiente de Produção (Básico)
+### Ambiente de Produção (50 req/s)
 
 | Serviço | Configuração | Custo/mês |
 |---------|--------------|-----------|
-| **GKE Autopilot** | 4 vCPU, 16GB RAM | ~$275 |
-| **Cloud SQL** | 2 vCPU, 8GB, 100GB SSD, HA | ~$180 |
+| **GKE Autopilot** | 8 vCPU, 32GB RAM (auto-scale) | ~$400 |
+| **Cloud SQL** | 4 vCPU, 16GB, 200GB SSD, HA | ~$350 |
 | **Memorystore Redis** | 5GB Standard (HA) | ~$175 |
-| **Cloud Pub/Sub** | ~100GB/mês | ~$10 |
-| **Cloud Storage** | 100GB | ~$2 |
-| **Load Balancer** | 3 regras + processamento | ~$35 |
-| **Rede (egress)** | ~100GB | ~$12 |
-| **Cloud Armor (WAF)** | Básico | ~$5 |
-
-| **TOTAL PROD BÁSICO** | | **~$695/mês** |
-|-----------------------|---|---------------|
-
----
-
-### 🏢 Ambiente de Produção (Escalável - 50 req/s)
-
-| Serviço | Configuração | Custo/mês |
-|---------|--------------|-----------|
-| **GKE Autopilot** | 8-16 vCPU, 32-64GB RAM (auto-scale) | ~$550 |
-| **Cloud SQL** | 4 vCPU, 16GB, 200GB SSD, HA + Read Replica | ~$400 |
-| **Memorystore Redis** | 10GB Standard (HA) | ~$350 |
 | **Cloud Pub/Sub** | ~500GB/mês | ~$50 |
-| **Cloud Storage** | 500GB | ~$10 |
-| **Load Balancer** | 5 regras + alto processamento | ~$60 |
-| **Rede (egress)** | ~500GB | ~$60 |
-| **Cloud Armor (WAF)** | Standard | ~$25 |
+| **Load Balancer** | 5 regras | ~$60 |
 | **Cloud Monitoring** | Métricas + Logs | ~$50 |
-
-| **TOTAL PROD ESCALÁVEL** | | **~$1.555/mês** |
-|--------------------------|---|-----------------|
+| **TOTAL PROD** | | **~$1.085/mês** |
 
 ---
 
-## 📊 Comparativo Visual
+## 📊 Observabilidade na Cloud
 
-```mermaid
-xychart-beta
-    title "Custo Mensal por Ambiente (USD)"
-    x-axis ["Dev", "Prod Básico", "Prod Escalável"]
-    y-axis "USD/mês" 0 --> 1600
-    bar [170, 695, 1555]
-```
+### Opção 1: Self-Hosted (Recomendado)
 
----
+| Ferramenta | Custo |
+|------------|-------|
+| Grafana OSS | **$0** |
+| Prometheus | **$0** |
+| Loki | **$0** |
+| Jaeger | **$0** |
+| **TOTAL** | **$0** (apenas infra) |
 
-## 🔍 Distribuição de Custos
+> Custo adicional de infra: ~$20-50/mês para containers extras
 
-### Produção Escalável
+### Opção 2: Grafana Cloud (Managed)
 
-```mermaid
-pie title Distribuição de Custos - Prod Escalável
-    "GKE (Containers)" : 550
-    "Cloud SQL (Banco)" : 400
-    "Memorystore (Cache)" : 350
-    "Pub/Sub (Fila)" : 50
-    "Rede + LB" : 120
-    "Outros" : 85
-```
+| Tier | Métricas | Logs | Traces | Custo/mês |
+|------|----------|------|--------|-----------|
+| **Free** | 10K séries | 50GB | 50GB | **$0** |
+| **Pro** | 50K séries | 100GB | 100GB | ~$50 |
+| **Advanced** | Ilimitado | Ilimitado | Ilimitado | ~$300+ |
 
----
+### Opção 3: Datadog (Enterprise)
 
-## 💲 Preços Unitários GCP
-
-### GKE Autopilot
-
-| Recurso | Preço |
-|---------|-------|
-| vCPU | $0.0413/vCPU/hora |
-| Memória | $0.0046/GB/hora |
-| Storage Ephemeral | $0.00005/GB/hora |
-| Cluster fee | $0.10/hora |
-
-### Cloud SQL (PostgreSQL)
-
-| Recurso | Preço |
-|--------|-------|
-| vCPU | $0.0413/vCPU/hora |
-| Memória | $0.007/GB/hora |
-| SSD Storage | $0.17/GB/mês |
-| HA (Alta Disponibilidade) | +100% do custo |
-| Read Replica | +100% por réplica |
-
-### Memorystore (Redis)
-
-| Tier | Preço |
+| Tier | Custo |
 |------|-------|
-| Basic | $0.035/GB/hora |
-| Standard (HA) | $0.070/GB/hora |
-
-### Cloud Pub/Sub
-
-| Recurso | Preço |
-|---------|-------|
-| Primeiros 10GB/mês | **Gratuito** |
-| Acima de 10GB | $0.10/GB |
-
-### Cloud Load Balancer
-
-| Recurso | Preço |
-|---------|-------|
-| Forwarding rule | $0.025/hora (~$18/mês) |
-| Data processing | $0.008/GB |
+| **APM** | ~$31/host/mês |
+| **Logs** | ~$1.27/GB ingestado |
+| **Infrastructure** | ~$15/host/mês |
+| **TOTAL (1 host)** | **~$50-100/mês** |
 
 ---
 
 ## 💡 Estratégias de Redução de Custos
 
-### 1. Committed Use Discounts (CUD)
+### 1. Committed Use Discounts (GCP/AWS)
 
 | Compromisso | Desconto |
 |-------------|----------|
-| 1 ano | **~20%** |
+| 1 ano | **~20-30%** |
+| 3 anos | **~50-60%** |
+
+### 2. Spot/Preemptible Instances
+
+| Uso | Economia |
+|-----|----------|
+| Workers não-críticos | **Até 80%** |
+| Ambientes de dev/staging | **Até 80%** |
+
+### 3. Reserved Instances (Banco de Dados)
+
+| Compromisso | Economia |
+|-------------|----------|
+| 1 ano | **~30%** |
 | 3 anos | **~50%** |
 
-### 2. Spot/Preemptible VMs
-
-| Uso | Desconto |
-|-----|----------|
-| Workers tolerantes a interrupção | **Até 80%** |
-| Ambientes de desenvolvimento | **Até 80%** |
-
-### 3. Escalar para Zero
+### 4. Escalabilidade Inteligente
 
 - GKE Autopilot escala para zero quando não há carga
-- Ideal para ambientes de desenvolvimento/staging
-
-### 4. Free Tier
-
-| Serviço | Free Tier |
-|---------|-----------|
-| Cloud Pub/Sub | 10GB/mês |
-| Cloud Storage | 5GB |
-| Cloud Functions | 2M invocações/mês |
+- Horário comercial apenas para dev
+- Serverless para cargas variáveis
 
 ---
 
-## 📈 Custos com Otimizações
+## 📈 Custos com Otimizações (GCP)
 
-| Ambiente | Custo Normal | Com CUD 1 ano | Com CUD 3 anos |
-|----------|--------------|---------------|----------------|
-| **Desenvolvimento** | $170/mês | $136/mês | $85/mês |
-| **Produção Básica** | $695/mês | $556/mês | $348/mês |
-| **Produção Escalável** | $1.555/mês | $1.244/mês | $778/mês |
-
-### Com Spot VMs para Workers
-
-| Ambiente | Custo Normal | Com Spot Workers |
-|----------|--------------|------------------|
-| **Desenvolvimento** | $170/mês | ~$100/mês |
-| **Produção Escalável** | $1.555/mês | ~$1.200/mês |
+| Ambiente | Normal | CUD 1 ano | CUD 3 anos |
+|----------|--------|-----------|------------|
+| **Desenvolvimento** | $170/mês | $136/mês | **$85/mês** |
+| **Produção** | $1.085/mês | $868/mês | **$543/mês** |
 
 ---
 
-## 📋 Resumo Final
+## 🎯 Recomendação por Cenário
 
-```mermaid
-flowchart LR
-    subgraph Licenças["💰 Licenças"]
-        L["$0/mês"]
-    end
-    
-    subgraph Dev["🧪 Dev"]
-        D["$170/mês"]
-    end
-    
-    subgraph Prod["🚀 Prod"]
-        P["$695-1.555/mês"]
-    end
-    
-    subgraph Otimizado["✨ Otimizado"]
-        O["$85-778/mês<br/>(com CUD 3 anos)"]
-    end
+### 🧪 Desenvolvimento/Testes
+
+| Opção | Custo | Recomendação |
+|-------|-------|--------------|
+| **Local (Docker)** | $0 | ⭐⭐⭐⭐⭐ Ideal |
+| **Fly.io** | ~$15 | ⭐⭐⭐⭐ Bom |
+| **Railway** | ~$20 | ⭐⭐⭐ OK |
+
+### 🚀 Produção Pequena (< 10 req/s)
+
+| Opção | Custo | Recomendação |
+|-------|-------|--------------|
+| **Fly.io** | ~$65 | ⭐⭐⭐⭐⭐ Melhor custo-benefício |
+| **Railway** | ~$85 | ⭐⭐⭐⭐ Bom |
+| **DigitalOcean** | ~$100 | ⭐⭐⭐ OK |
+
+### 🏢 Produção Escalável (50+ req/s)
+
+| Opção | Custo | Recomendação |
+|-------|-------|--------------|
+| **GCP (otimizado)** | ~$543 | ⭐⭐⭐⭐⭐ Escalável |
+| **AWS (otimizado)** | ~$500 | ⭐⭐⭐⭐ Alternativa |
+| **Azure (otimizado)** | ~$550 | ⭐⭐⭐⭐ Enterprise |
+
+---
+
+## 📊 Comparativo Visual
+
+```
+Custo Mensal por Opção (USD)
+
+Local (Docker)     |  $0
+Fly.io (Dev)       |████ $15
+Railway (Dev)      |█████ $20
+Fly.io (Prod)      |████████████████ $65
+Railway (Prod)     |█████████████████████ $85
+GCP (Dev)          |██████████████████████████████████ $170
+GCP (Prod)         |████████████████████████████████████████████████████████████████████████████████████████████████████████████ $543 (otimizado)
 ```
 
-| Cenário | Custo Mensal | Custo Anual |
-|---------|--------------|-------------|
-| **Dev (normal)** | $170 | $2.040 |
-| **Dev (otimizado)** | $85 | $1.020 |
-| **Prod Básico (normal)** | $695 | $8.340 |
-| **Prod Básico (CUD 3y)** | $348 | $4.176 |
-| **Prod Escalável (normal)** | $1.555 | $18.660 |
-| **Prod Escalável (CUD 3y)** | $778 | $9.336 |
-
 ---
 
-## 🧮 Calculadora Oficial
+## 🧮 TCO (Total Cost of Ownership) - 1 Ano
 
-Para estimativas personalizadas:
-
-🔗 [Google Cloud Pricing Calculator](https://cloud.google.com/products/calculator)
+| Cenário | Mensal | Anual |
+|---------|--------|-------|
+| **Local** | $0 | $0 |
+| **Fly.io Dev** | $15 | $180 |
+| **Fly.io Prod** | $65 | $780 |
+| **Railway Prod** | $85 | $1.020 |
+| **GCP Dev (otimizado)** | $85 | $1.020 |
+| **GCP Prod (otimizado)** | $543 | $6.516 |
 
 ---
 
 ## 📚 Referências
 
-- [GCP Pricing Overview](https://cloud.google.com/pricing)
-- [GKE Autopilot Pricing](https://cloud.google.com/kubernetes-engine/pricing)
-- [Cloud SQL Pricing](https://cloud.google.com/sql/pricing)
-- [Memorystore Pricing](https://cloud.google.com/memorystore/docs/redis/pricing)
-- [Committed Use Discounts](https://cloud.google.com/compute/docs/instances/signing-up-committed-use-discounts)
+- [Railway Pricing](https://railway.app/pricing)
+- [Fly.io Pricing](https://fly.io/docs/about/pricing/)
+- [GCP Pricing Calculator](https://cloud.google.com/products/calculator)
+- [Grafana Cloud Pricing](https://grafana.com/pricing/)
+- [Upstash Pricing](https://upstash.com/pricing)
 
+---
 
+## ✅ Conclusão
 
+| Fase | Recomendação | Custo |
+|------|--------------|-------|
+| **Desenvolvimento** | Docker Local | **$0** |
+| **MVP/Staging** | Fly.io | **~$15-65/mês** |
+| **Produção Inicial** | Railway ou Fly.io | **~$65-100/mês** |
+| **Produção Escalável** | GCP/AWS com CUD | **~$500-600/mês** |
+
+> 💡 **Dica:** Comece local ($0), valide o produto, depois escale conforme a demanda.

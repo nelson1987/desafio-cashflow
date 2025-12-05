@@ -45,27 +45,46 @@ Este documento descreve a stack de observabilidade do projeto Cashflow.
 
 ## 🚀 Como Executar
 
-### 1. Subir a stack de observabilidade
+### Comando Único (Recomendado)
 
 ```bash
-# Criar a rede (se não existir)
-docker network create cashflow-network
-
-# Subir os serviços de observabilidade
-docker compose -f docker-compose.observability.yml up -d
-
-# Verificar se todos estão rodando
-docker compose -f docker-compose.observability.yml ps
+# Sobe tudo: API, Worker, Infraestrutura + Observabilidade
+cd /mnt/c/git/desafio-cashflow && \
+docker compose --profile app up -d --build && \
+docker compose -f docker-compose.observability.yml up -d && \
+docker network connect desafio-cashflow_cashflow-network cashflow-grafana 2>/dev/null; \
+docker network connect desafio-cashflow_cashflow-network cashflow-prometheus 2>/dev/null; \
+docker network connect desafio-cashflow_cashflow-network cashflow-loki 2>/dev/null; \
+docker network connect desafio-cashflow_cashflow-network cashflow-jaeger 2>/dev/null
 ```
 
-### 2. Executar a aplicação
+### Passo a Passo
+
+#### 1. Subir infraestrutura + aplicação
 
 ```bash
-# Subir infraestrutura (PostgreSQL, Redis, RabbitMQ)
-docker compose up -d
+docker compose --profile app up -d --build
+```
 
-# Executar a API
-dotnet run --project src/Cashflow.WebApi
+#### 2. Subir a stack de observabilidade
+
+```bash
+docker compose -f docker-compose.observability.yml up -d
+```
+
+#### 3. Conectar containers na mesma rede
+
+```bash
+docker network connect desafio-cashflow_cashflow-network cashflow-grafana
+docker network connect desafio-cashflow_cashflow-network cashflow-prometheus
+docker network connect desafio-cashflow_cashflow-network cashflow-loki
+docker network connect desafio-cashflow_cashflow-network cashflow-jaeger
+```
+
+#### 4. Verificar se todos estão rodando
+
+```bash
+docker ps --format "table {{.Names}}\t{{.Status}}" | grep cashflow
 ```
 
 ### 3. Acessar os dashboards

@@ -47,7 +47,7 @@ public class LancamentoEntity
             Id = lancamento.Id,
             Valor = lancamento.Valor,
             Tipo = (short)lancamento.Tipo,
-            Data = lancamento.Data,
+            Data = DateTime.SpecifyKind(lancamento.Data.Date, DateTimeKind.Utc),
             Descricao = lancamento.Descricao,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow

@@ -40,7 +40,7 @@ public class SaldoConsolidadoEntity
     {
         return new SaldoConsolidadoEntity
         {
-            Data = saldoDiario.Data.Date,
+            Data = DateTime.SpecifyKind(saldoDiario.Data.Date, DateTimeKind.Utc),
             TotalCreditos = saldoDiario.TotalCreditos,
             TotalDebitos = saldoDiario.TotalDebitos,
             Saldo = saldoDiario.Saldo,
