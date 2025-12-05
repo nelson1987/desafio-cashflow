@@ -79,4 +79,3 @@ public static class ObservabilityExtensions
                 propertiesAsLabels: new[] { "level" });
     }
 }
-
