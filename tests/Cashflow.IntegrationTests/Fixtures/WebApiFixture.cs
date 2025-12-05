@@ -80,8 +80,8 @@ public class WebApiFixture : IAsyncLifetime
         using var scope = Factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<CashflowDbContext>();
         
-        // Limpa as tabelas
-        await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE lancamentos, saldos_consolidados CASCADE");
+        // Limpa as tabelas (com schema cashflow)
+        await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE cashflow.lancamentos, cashflow.saldos_consolidados CASCADE");
     }
 }
 
