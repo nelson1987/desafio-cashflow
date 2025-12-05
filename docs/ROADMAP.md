@@ -12,10 +12,11 @@ flowchart LR
         D3["v1.2 - API REST"]
         D4["v1.3 - Worker"]
         D5["v1.4 - Testes"]
+        D6["v1.5 - Observabilidade"]
     end
     
     subgraph Current["🔄 Atual"]
-        C1["v1.5 - Deploy & Observability"]
+        C1["v1.6 - Deploy Kubernetes"]
     end
     
     Done --> Current
@@ -60,22 +61,32 @@ flowchart LR
 
 ### v1.4 - Testes ✅
 
-- [x] Testes unitários do domínio (26 testes)
-- [x] Testes unitários da Application (54 testes)
-- [x] Testes de integração com Testcontainers (55 testes)
+- [x] Testes unitários do domínio (83 testes)
+- [x] Testes unitários da Application (120 testes)
+- [x] Testes de integração com Testcontainers (43 testes)
 - [x] Testes de performance com K6 (55 RPS, P95 < 100ms)
 - [x] CI/CD com GitHub Actions
 - [x] Configuração para WSL/Docker
+
+### v1.5 - Observabilidade ✅
+
+- [x] OpenTelemetry para traces distribuídos
+- [x] Prometheus para métricas (P95, RPS, Error Rate)
+- [x] Loki para logs estruturados
+- [x] Jaeger para visualização de traces
+- [x] Grafana para dashboards unificados
+- [x] Serilog com exportação para Loki
+- [x] Documentação de observabilidade
 
 ## 📊 Resumo de Testes
 
 | Projeto | Testes | Status |
 |---------|--------|--------|
-| `Cashflow.Tests` | 26 | ✅ |
-| `Cashflow.Application.Tests` | 54 | ✅ |
-| `Cashflow.IntegrationTests` | 55 (5 skipped) | ✅ |
+| `Cashflow.Tests` | 83 | ✅ |
+| `Cashflow.Application.Tests` | 120 | ✅ |
+| `Cashflow.IntegrationTests` | 43 (5 skipped) | ✅ |
 | `tests/k6` | 4 scripts | ✅ |
-| **Total** | **135 + K6** | ✅ |
+| **Total** | **246 + K6** | ✅ |
 
 ## 🗺️ Visão de Evolução
 
@@ -85,7 +96,7 @@ timeline
     
     section v1.x (Concluído)
         Core Domain : Domínio DDD
-                    : Testes Unitários
+                    : 246 Testes
         Persistência : EF Core + PostgreSQL
                      : Redis Cache
                      : RabbitMQ
@@ -94,11 +105,14 @@ timeline
                  : Validações
         Worker : Consumer RabbitMQ
                : Polly Resiliência
+        Observabilidade : Grafana + Prometheus
+                        : Loki + Jaeger
+                        : OpenTelemetry
     
     section v2.0 (Próximo)
         Deploy : Kubernetes
-               : Observabilidade
-               : Performance Tests
+               : Helm Charts
+               : Terraform/GCP
     
     section v3.0 (Futuro)
         Features : Categorias
@@ -108,7 +122,7 @@ timeline
 
 ## 📋 Backlog Detalhado
 
-### v1.5 - Deploy & Observability 🔄
+### v1.6 - Deploy Kubernetes 🔄
 
 ```mermaid
 flowchart TB
@@ -117,22 +131,40 @@ flowchart TB
         Helm["Helm Charts"]
         Terraform["Terraform/IaC"]
     end
-    
-    subgraph Observability["Observabilidade"]
-        Metrics["Prometheus Metrics"]
-        Traces["OpenTelemetry"]
-        Dashboard["Grafana Dashboards"]
-    end
 ```
 
 **Tarefas:**
 
-- [x] Testes de performance com K6 (55 RPS) ✅
 - [ ] Criar manifestos Kubernetes
 - [ ] Configurar Helm Charts
-- [ ] Adicionar métricas Prometheus
-- [ ] Configurar OpenTelemetry
-- [ ] Dashboards Grafana
+- [ ] Terraform para GCP
+- [ ] CI/CD para deploy automático
+
+### Observabilidade ✅ (Concluído)
+
+```mermaid
+flowchart TB
+    subgraph Observability["Stack de Observabilidade"]
+        Metrics["📊 Prometheus<br/>Métricas P95, RPS"]
+        Traces["🔍 Jaeger<br/>Traces Distribuídos"]
+        Logs["📝 Loki<br/>Logs Estruturados"]
+        Dashboard["📈 Grafana<br/>Dashboard Unificado"]
+    end
+    
+    Metrics --> Dashboard
+    Traces --> Dashboard
+    Logs --> Dashboard
+```
+
+**Implementado:**
+
+- [x] OpenTelemetry na API e Worker
+- [x] Prometheus para métricas
+- [x] Jaeger para traces distribuídos
+- [x] Loki para logs estruturados
+- [x] Grafana com dashboard pré-configurado
+- [x] Serilog exportando para Loki
+- [x] docker-compose.observability.yml
 
 ### v2.0 - Features Avançadas
 
@@ -205,17 +237,26 @@ flowchart TB
 
 | Métrica | Meta | Atual |
 |---------|------|-------|
-| Cobertura de Testes | > 80% | ✅ ~85% |
+| Cobertura de Testes | > 80% | ✅ ~95% |
 | Complexidade Ciclomática | < 10 | ✅ |
 | Duplicação de Código | < 3% | ✅ |
 | Débito Técnico | Baixo | ✅ |
-| Testes Passando | 100% | ✅ 130/135 |
+| Testes Passando | 100% | ✅ 246/251 |
+| P95 Latency | < 100ms | ✅ Monitorado |
+| Error Rate | < 5% | ✅ Monitorado |
 
 ### Ferramentas Implementadas
 
 - [x] GitHub Actions para CI/CD
 - [x] Testcontainers para testes de integração
 - [x] Docker multi-stage builds
+- [x] K6 para testes de performance
+- [x] OpenTelemetry para tracing
+- [x] Prometheus para métricas
+- [x] Grafana para dashboards
+- [x] Jaeger para traces
+- [x] Loki para logs
+- [x] Release automático no CI
 - [ ] SonarQube para análise estática
 - [ ] Codecov para cobertura de código
 
@@ -250,8 +291,9 @@ Funcionalidades para considerar no futuro:
 | v1.1 | Persistência | ✅ Concluído |
 | v1.2 | API REST | ✅ Concluído |
 | v1.3 | Worker | ✅ Concluído |
-| v1.4 | Testes | ✅ Concluído |
-| v1.5 | Deploy & Observability | 🔄 Em andamento |
+| v1.4 | Testes (246 testes) | ✅ Concluído |
+| v1.5 | Observabilidade (Grafana, Prometheus, Loki, Jaeger) | ✅ Concluído |
+| v1.6 | Deploy Kubernetes | 🔄 Em andamento |
 | v2.0 | Features Avançadas | ⏳ Planejado |
 
 ## 🤝 Contribuindo

@@ -1,16 +1,21 @@
 using Cashflow.Application.Abstractions;
 using Cashflow.Application.Services;
 using Cashflow.ConsolidationWorker;
+using Cashflow.ConsolidationWorker.Extensions;
 using Cashflow.ConsolidationWorker.Services;
 using Cashflow.Infrastructure;
 
 using Serilog;
 
+// Configuração do Serilog
+var configuration = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json", optional: true)
+    .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Development"}.json", optional: true)
+    .AddEnvironmentVariables()
+    .Build();
+
 Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Information()
-    .WriteTo.Console(
-        outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
-    .Enrich.FromLogContext()
+    .ConfigureWorkerSerilog(configuration)
     .CreateLogger();
 
 try
@@ -28,6 +33,9 @@ try
 
     // Infrastructure (PostgreSQL, Redis, RabbitMQ)
     builder.Services.AddInfrastructure(builder.Configuration);
+
+    // OpenTelemetry (Jaeger)
+    builder.Services.AddWorkerObservability(builder.Configuration);
 
     // Application Services
     builder.Services.AddScoped<IConsolidadoService, ConsolidadoService>();

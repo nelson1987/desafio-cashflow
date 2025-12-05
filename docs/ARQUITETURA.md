@@ -154,6 +154,16 @@ sequenceDiagram
 | **FluentValidation** | Validação de requests |
 | **Serilog** | Logging estruturado |
 | **Testcontainers** | Testes de integração |
+| **OpenTelemetry** | Traces e métricas distribuídas |
+
+### Stack de Observabilidade
+
+| Ferramenta | Propósito |
+|------------|-----------|
+| **Grafana** | Dashboards unificados |
+| **Prometheus** | Coleta de métricas (P95, RPS, Error Rate) |
+| **Loki** | Agregação de logs estruturados |
+| **Jaeger** | Traces distribuídos (API ↔ Worker) |
 
 ---
 
@@ -228,9 +238,9 @@ Cashflow.sln
 │       └── Program.cs                    # Host configuration
 │
 ├── tests/
-│   ├── Cashflow.Tests/                   # Testes de domínio (26)
-│   ├── Cashflow.Application.Tests/       # Testes unitários (54)
-│   └── Cashflow.IntegrationTests/        # Testes de integração (55)
+│   ├── Cashflow.Tests/                   # Testes de domínio (83)
+│   ├── Cashflow.Application.Tests/       # Testes unitários (120)
+│   └── Cashflow.IntegrationTests/        # Testes de integração (43)
 │
 ├── docs/                                 # 📚 Documentação
 │

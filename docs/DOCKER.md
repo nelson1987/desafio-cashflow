@@ -130,20 +130,53 @@ REDIS_COMMANDER_PORT=8082
 | **PostgreSQL** | cashflow | cashflow123 |
 | **RabbitMQ** | cashflow | cashflow123 |
 
+## 📊 Observabilidade
+
+Para monitoramento completo, suba também a stack de observabilidade:
+
+```bash
+# Criar rede compartilhada
+docker network create cashflow-network
+
+# Subir infraestrutura
+docker compose up -d
+
+# Subir observabilidade (Grafana, Prometheus, Loki, Jaeger)
+docker compose -f docker-compose.observability.yml up -d
+```
+
+### Serviços de Observabilidade
+
+| Serviço | Porta | URL | Descrição |
+|---------|-------|-----|-----------|
+| **Grafana** | 3000 | http://localhost:3000 | Dashboards (admin/cashflow123) |
+| **Prometheus** | 9090 | http://localhost:9090 | Métricas (P95, RPS) |
+| **Loki** | 3100 | http://localhost:3100 | Logs estruturados |
+| **Jaeger** | 16686 | http://localhost:16686 | Traces distribuídos |
+
+> 📖 Veja mais detalhes em [OBSERVABILIDADE.md](OBSERVABILIDADE.md)
+
 ## 📁 Estrutura de Arquivos Docker
 
 ```
-├── Dockerfile              # Build da API
-├── Dockerfile.worker       # Build do Worker
-├── docker-compose.yml      # Serviços de infraestrutura
-├── docker-compose.override.yml  # Configurações de desenvolvimento
-├── .dockerignore           # Arquivos ignorados no build
-├── .env.example            # Template de variáveis de ambiente
-├── .env                    # Variáveis de ambiente (não versionado)
+├── Dockerfile                      # Build da API
+├── Dockerfile.worker               # Build do Worker
+├── docker-compose.yml              # Serviços de infraestrutura
+├── docker-compose.override.yml     # Configurações de desenvolvimento
+├── docker-compose.observability.yml # Grafana, Prometheus, Loki, Jaeger
+├── .dockerignore                   # Arquivos ignorados no build
+├── .env.example                    # Template de variáveis de ambiente
+├── .env                            # Variáveis de ambiente (não versionado)
 └── docker/
-    └── postgres/
-        └── init/
-            └── 01-init.sql # Script de inicialização do banco
+    ├── postgres/
+    │   └── init/
+    │       └── 01-init.sql         # Script de inicialização do banco
+    └── observability/
+        ├── prometheus.yml          # Configuração do Prometheus
+        ├── loki-config.yml         # Configuração do Loki
+        └── grafana/
+            ├── provisioning/       # Datasources e dashboards
+            └── dashboards/         # JSON dos dashboards
 ```
 
 ## 💻 Comandos Úteis
@@ -310,6 +343,30 @@ docker compose up -d
 
 ## 📊 Monitoramento
 
+### Grafana (Métricas, Logs, Traces)
+
+Acesse http://localhost:3000 com as credenciais:
+- **Usuário:** admin
+- **Senha:** cashflow123
+
+**Dashboards disponíveis:**
+- 📊 Cashflow Overview - P95, RPS, Error Rate
+- 📝 Application Logs - Logs estruturados com trace ID
+
+### Jaeger (Traces Distribuídos)
+
+Acesse http://localhost:16686 para visualizar traces:
+- Selecione o serviço `cashflow-api` ou `cashflow-worker`
+- Visualize o caminho das requisições
+
+### Prometheus (Métricas)
+
+Acesse http://localhost:9090 para queries de métricas:
+```promql
+# P95 Latency
+histogram_quantile(0.95, sum(rate(http_server_request_duration_seconds_bucket[5m])) by (le))
+```
+
 ### RabbitMQ Management UI
 
 Acesse http://localhost:15672 com as credenciais:
@@ -348,9 +405,11 @@ docker push seu-registry/cashflow-api:v1.0.0
 - ✅ Use secrets para senhas (Docker Swarm ou Kubernetes)
 - ✅ Configure limites de recursos (CPU/memória)
 - ✅ Use volumes persistentes com backup
-- ✅ Configure logging centralizado
-- ✅ Implemente monitoramento (Prometheus/Grafana)
+- ✅ Configure logging centralizado (Loki)
+- ✅ Implemente monitoramento (Prometheus/Grafana) - **Já implementado**
+- ✅ Configure tracing distribuído (Jaeger) - **Já implementado**
 - ✅ Use HTTPS/TLS para comunicação
+- ✅ Configure OpenTelemetry para observabilidade - **Já implementado**
 
 ## 📚 Referências
 

@@ -3,7 +3,14 @@ using Cashflow.Infrastructure;
 using Cashflow.WebApi.Extensions;
 using Cashflow.WebApi.Middlewares;
 
+using Serilog;
+
 var builder = WebApplication.CreateBuilder(args);
+
+// ========================================
+// Observabilidade (Serilog + OpenTelemetry)
+// ========================================
+builder.Host.ConfigureSerilog(builder.Configuration);
 
 // ========================================
 // Configuração de Serviços
@@ -12,6 +19,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Camadas da aplicação
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// OpenTelemetry (Jaeger + Prometheus)
+builder.Services.AddObservability(builder.Configuration);
 
 // Health checks
 builder.Services.AddInfrastructureHealthChecks(builder.Configuration);
@@ -86,6 +96,19 @@ app.UseCors();
 
 // Mapeia todos os endpoints automaticamente
 app.MapEndpoints();
+
+// Endpoint de métricas para Prometheus
+app.MapObservabilityEndpoints();
+
+// Serilog request logging
+app.UseSerilogRequestLogging(options =>
+{
+    options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+    {
+        diagnosticContext.Set("RequestHost", httpContext.Request.Host.Value);
+        diagnosticContext.Set("UserAgent", httpContext.Request.Headers.UserAgent.ToString());
+    };
+});
 
 // ========================================
 // Inicialização

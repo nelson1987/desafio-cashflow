@@ -1,0 +1,27 @@
+# Prometheus Configuration for Cashflow
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Cashflow API metrics
+  - job_name: 'cashflow-api'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['host.docker.internal:5000']
+        labels:
+          app: 'cashflow-api'
+          env: 'development'
+    # Retry if API is not available
+    scrape_timeout: 10s
+
+  # Add more targets as needed
+  # - job_name: 'cashflow-worker'
+  #   static_configs:
+  #     - targets: ['host.docker.internal:5001']
+
