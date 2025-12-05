@@ -328,3 +328,4 @@ Para estimativas personalizadas:
 - [Committed Use Discounts](https://cloud.google.com/compute/docs/instances/signing-up-committed-use-discounts)
 
 
+

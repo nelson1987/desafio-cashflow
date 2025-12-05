@@ -62,3 +62,4 @@ ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 ENTRYPOINT ["dotnet", "Cashflow.ConsolidationWorker.dll"]
 
 
+
