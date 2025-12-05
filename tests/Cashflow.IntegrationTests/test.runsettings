@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <RunConfiguration>
+    <EnvironmentVariables>
+      <!-- Docker do WSL via TCP -->
+      <DOCKER_HOST>tcp://localhost:2375</DOCKER_HOST>
+    </EnvironmentVariables>
+  </RunConfiguration>
+</RunSettings>
+
