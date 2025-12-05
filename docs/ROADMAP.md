@@ -7,13 +7,15 @@ Este documento apresenta a visão de evolução do projeto Cashflow, com os pró
 ```mermaid
 flowchart LR
     subgraph Done["✅ Concluído"]
-        D1["Domínio"]
-        D2["Testes Unitários"]
-        D3["Documentação"]
+        D1["v1.0 - Domínio"]
+        D2["v1.1 - Persistência"]
+        D3["v1.2 - API REST"]
+        D4["v1.3 - Worker"]
+        D5["v1.4 - Testes"]
     end
     
     subgraph Current["🔄 Atual"]
-        C1["v1.0 - Core Domain"]
+        C1["v1.5 - Deploy & Observability"]
     end
     
     Done --> Current
@@ -25,8 +27,53 @@ flowchart LR
 - [x] Entidade `Lancamento`
 - [x] Value Object `SaldoDiario`
 - [x] Agregado `FluxoCaixa`
-- [x] Testes unitários (26 testes)
+- [x] Testes unitários do domínio (26 testes)
 - [x] Documentação inicial
+
+### v1.1 - Persistência ✅
+
+- [x] Criar projeto `Cashflow.Infrastructure`
+- [x] Implementar `ILancamentoRepository`
+- [x] Implementar `ISaldoConsolidadoRepository`
+- [x] Configurar Entity Framework Core
+- [x] Configurar PostgreSQL
+- [x] Configurar Redis Cache
+- [x] Configurar RabbitMQ
+
+### v1.2 - API REST ✅
+
+- [x] Criar projeto `Cashflow.WebApi` (Minimal API)
+- [x] Criar projeto `Cashflow.Application`
+- [x] Implementar endpoints de Lançamentos
+- [x] Implementar endpoints de Consolidado
+- [x] Configurar Health Checks
+- [x] Implementar validações com FluentValidation
+- [x] Tratamento de erros global
+
+### v1.3 - Worker de Consolidação ✅
+
+- [x] Criar projeto `Cashflow.ConsolidationWorker`
+- [x] Implementar consumer RabbitMQ
+- [x] Implementar Polly para resiliência (retry, circuit breaker)
+- [x] Health check via arquivo para Docker
+- [x] Configuração de logging com Serilog
+
+### v1.4 - Testes ✅
+
+- [x] Testes unitários do domínio (26 testes)
+- [x] Testes unitários da Application (54 testes)
+- [x] Testes de integração com Testcontainers (55 testes)
+- [x] CI/CD com GitHub Actions
+- [x] Configuração para WSL/Docker
+
+## 📊 Resumo de Testes
+
+| Projeto | Testes | Status |
+|---------|--------|--------|
+| `Cashflow.Tests` | 26 | ✅ |
+| `Cashflow.Application.Tests` | 54 | ✅ |
+| `Cashflow.IntegrationTests` | 55 (5 skipped) | ✅ |
+| **Total** | **135** | ✅ |
 
 ## 🗺️ Visão de Evolução
 
@@ -34,22 +81,24 @@ flowchart LR
 timeline
     title Roadmap do Projeto Cashflow
     
-    section v1.0
-        Core Domain : Domínio
+    section v1.x (Concluído)
+        Core Domain : Domínio DDD
                     : Testes Unitários
-                    : Documentação
-    
-    section v1.1
-        Persistência : Repository Pattern
-                     : Entity Framework
-                     : SQLite/PostgreSQL
-    
-    section v1.2
+        Persistência : EF Core + PostgreSQL
+                     : Redis Cache
+                     : RabbitMQ
         API REST : Minimal API
-                 : Swagger
+                 : Health Checks
                  : Validações
+        Worker : Consumer RabbitMQ
+               : Polly Resiliência
     
-    section v2.0
+    section v2.0 (Próximo)
+        Deploy : Kubernetes
+               : Observabilidade
+               : Performance Tests
+    
+    section v3.0 (Futuro)
         Features : Categorias
                  : Múltiplos Caixas
                  : Dashboard
@@ -57,81 +106,36 @@ timeline
 
 ## 📋 Backlog Detalhado
 
-### v1.1 - Persistência
+### v1.5 - Deploy & Observability 🔄
 
 ```mermaid
 flowchart TB
-    subgraph Infra["Cashflow.Infra"]
-        Repo["Repository Pattern"]
-        EF["Entity Framework Core"]
-        DB["SQLite / PostgreSQL"]
+    subgraph Deploy["Infraestrutura"]
+        K8s["Kubernetes Manifests"]
+        Helm["Helm Charts"]
+        Terraform["Terraform/IaC"]
     end
     
-    subgraph Domain["Cashflow (Domain)"]
-        IRepo["ILancamentoRepository"]
-        IUoW["IUnitOfWork"]
+    subgraph Observability["Observabilidade"]
+        Metrics["Prometheus Metrics"]
+        Traces["OpenTelemetry"]
+        Dashboard["Grafana Dashboards"]
     end
     
-    Domain --> Infra
+    subgraph Performance["Performance"]
+        K6["K6 Load Tests"]
+        Benchmark["BenchmarkDotNet"]
+    end
 ```
 
 **Tarefas:**
 
-- [ ] Criar projeto `Cashflow.Infra`
-- [ ] Implementar `ILancamentoRepository`
-- [ ] Implementar `IFluxoCaixaRepository`
-- [ ] Configurar Entity Framework Core
-- [ ] Criar migrations
-- [ ] Testes de integração com banco
-
-**Padrões a implementar:**
-- Repository Pattern
-- Unit of Work
-- Specification Pattern (opcional)
-
-### v1.2 - API REST
-
-```mermaid
-flowchart TB
-    subgraph API["Cashflow.API"]
-        Endpoints["Minimal API Endpoints"]
-        Swagger["OpenAPI / Swagger"]
-        Validation["FluentValidation"]
-    end
-    
-    subgraph Application["Cashflow.Application"]
-        Commands["Commands / Handlers"]
-        Queries["Queries / Handlers"]
-    end
-    
-    subgraph Domain["Cashflow (Domain)"]
-        Entities["Entidades"]
-    end
-    
-    API --> Application
-    Application --> Domain
-```
-
-**Endpoints planejados:**
-
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| `POST` | `/lancamentos` | Registrar lançamento |
-| `GET` | `/lancamentos` | Listar lançamentos |
-| `GET` | `/lancamentos/{id}` | Obter lançamento |
-| `GET` | `/saldo/diario/{data}` | Saldo do dia |
-| `GET` | `/saldo/acumulado/{data}` | Saldo acumulado |
-| `GET` | `/relatorio?inicio={}&fim={}` | Relatório consolidado |
-
-**Tarefas:**
-
-- [ ] Criar projeto `Cashflow.API`
-- [ ] Criar projeto `Cashflow.Application` (opcional)
-- [ ] Implementar endpoints
-- [ ] Configurar Swagger/OpenAPI
-- [ ] Implementar validações
-- [ ] Tratamento de erros global
-- [ ] Testes de integração da API
+- [ ] Criar manifestos Kubernetes
+- [ ] Configurar Helm Charts
+- [ ] Adicionar métricas Prometheus
+- [ ] Configurar OpenTelemetry
+- [ ] Testes de performance com K6 (50 req/s)
+- [ ] Dashboards Grafana
 
 ### v2.0 - Features Avançadas
 
@@ -167,17 +171,20 @@ mindmap
 | Importação | Integração com extratos bancários | Baixa |
 | Notificações | Alertas de saldo baixo | Baixa |
 
-## 🏗️ Arquitetura Futura
+## 🏗️ Arquitetura Implementada
 
 ```mermaid
 flowchart TB
     subgraph Presentation["Camada de Apresentação"]
-        API["🌐 Cashflow.API<br/>Minimal API"]
-        Web["🖥️ Cashflow.Web<br/>(Futuro)"]
+        API["🌐 Cashflow.WebApi<br/>Minimal API"]
+    end
+    
+    subgraph Workers["Workers"]
+        Worker["⚙️ Cashflow.ConsolidationWorker<br/>Background Service"]
     end
     
     subgraph Application["Camada de Aplicação"]
-        App["📦 Cashflow.Application<br/>CQRS / MediatR"]
+        App["📦 Cashflow.Application<br/>Services / DTOs / Validators"]
     end
     
     subgraph Domain["Camada de Domínio"]
@@ -185,16 +192,14 @@ flowchart TB
     end
     
     subgraph Infrastructure["Camada de Infraestrutura"]
-        Infra["🗄️ Cashflow.Infra<br/>EF Core / Repositories"]
-        External["🔌 Cashflow.External<br/>Integrações"]
+        Infra["🗄️ Cashflow.Infrastructure<br/>EF Core / Redis / RabbitMQ"]
     end
     
     API --> App
-    Web --> App
+    Worker --> App
     App --> Core
     App --> Infra
     Infra --> Core
-    External --> App
 ```
 
 ## 📊 Métricas de Qualidade
@@ -203,28 +208,31 @@ flowchart TB
 
 | Métrica | Meta | Atual |
 |---------|------|-------|
-| Cobertura de Testes | > 80% | ~90% |
+| Cobertura de Testes | > 80% | ✅ ~85% |
 | Complexidade Ciclomática | < 10 | ✅ |
 | Duplicação de Código | < 3% | ✅ |
 | Débito Técnico | Baixo | ✅ |
+| Testes Passando | 100% | ✅ 130/135 |
 
-### Ferramentas Planejadas
+### Ferramentas Implementadas
 
+- [x] GitHub Actions para CI/CD
+- [x] Testcontainers para testes de integração
+- [x] Docker multi-stage builds
 - [ ] SonarQube para análise estática
-- [ ] GitHub Actions para CI/CD
-- [ ] Coverlet para cobertura de código
+- [ ] Codecov para cobertura de código
 
 ## 🎯 Critérios de Pronto (Definition of Done)
 
 Para cada feature ser considerada **pronta**:
 
-- [ ] Código implementado e revisado
-- [ ] Testes unitários escritos (cobertura > 80%)
-- [ ] Testes de integração (quando aplicável)
-- [ ] Documentação atualizada
-- [ ] Sem erros de linter/análise estática
-- [ ] Build passando no CI
-- [ ] Code review aprovado
+- [x] Código implementado e revisado
+- [x] Testes unitários escritos (cobertura > 80%)
+- [x] Testes de integração (quando aplicável)
+- [x] Documentação atualizada
+- [x] Sem erros de linter/análise estática
+- [x] Build passando no CI
+- [x] Docker build funcionando
 
 ## 💡 Ideias Futuras
 
@@ -237,16 +245,17 @@ Funcionalidades para considerar no futuro:
 5. **API Pública** - Para integrações externas
 6. **Mobile App** - Aplicativo para consulta rápida
 
-## 📅 Timeline Estimada
+## 📅 Timeline
 
-| Versão | Escopo | Estimativa |
-|--------|--------|------------|
+| Versão | Escopo | Status |
+|--------|--------|--------|
 | v1.0 | Core Domain | ✅ Concluído |
-| v1.1 | Persistência | 2-3 semanas |
-| v1.2 | API REST | 2-3 semanas |
-| v2.0 | Features | 4-6 semanas |
-
-> **Nota:** Estimativas são aproximadas e podem variar conforme disponibilidade e complexidade encontrada.
+| v1.1 | Persistência | ✅ Concluído |
+| v1.2 | API REST | ✅ Concluído |
+| v1.3 | Worker | ✅ Concluído |
+| v1.4 | Testes | ✅ Concluído |
+| v1.5 | Deploy & Observability | 🔄 Em andamento |
+| v2.0 | Features Avançadas | ⏳ Planejado |
 
 ## 🤝 Contribuindo
 
@@ -263,4 +272,5 @@ Quer contribuir com o projeto? Veja como:
 - [Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
 - [CQRS Pattern](https://docs.microsoft.com/en-us/azure/architecture/patterns/cqrs)
 - [Minimal APIs](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/minimal-apis)
-
+- [Testcontainers](https://testcontainers.com/)
+- [Polly Resilience](https://github.com/App-vNext/Polly)

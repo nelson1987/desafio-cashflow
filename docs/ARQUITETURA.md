@@ -4,24 +4,40 @@ Este documento explica as decisões arquiteturais do projeto Cashflow e os motiv
 
 ## 📐 Visão Geral da Arquitetura
 
-### Arquitetura Atual (Domínio)
+### Arquitetura Atual
 
 ```mermaid
 flowchart TB
     subgraph Solution["📦 Cashflow.sln"]
         subgraph Src["src/"]
-            Cashflow["🎯 Cashflow<br/>(Class Library)<br/><br/>• Entidades<br/>• Value Objects<br/>• Agregados"]
+            Cashflow["🎯 Cashflow<br/>(Domain)"]
+            Application["📦 Cashflow.Application<br/>(Use Cases)"]
+            Infrastructure["🗄️ Cashflow.Infrastructure<br/>(Persistence/Cache/MQ)"]
+            WebApi["🌐 Cashflow.WebApi<br/>(Minimal API)"]
+        end
+        
+        subgraph Workers["workers/"]
+            Worker["⚙️ Cashflow.ConsolidationWorker<br/>(Background Service)"]
         end
         
         subgraph Tests["tests/"]
-            CashflowTests["🧪 Cashflow.Tests<br/>(xUnit + Shouldly)<br/><br/>• Testes Unitários<br/>• Cobertura de Regras"]
+            DomainTests["🧪 Cashflow.Tests"]
+            AppTests["🧪 Cashflow.Application.Tests"]
+            IntegrationTests["🧪 Cashflow.IntegrationTests"]
         end
     end
     
-    CashflowTests -->|referencia| Cashflow
+    WebApi --> Application
+    Worker --> Application
+    Application --> Cashflow
+    Application --> Infrastructure
+    Infrastructure --> Cashflow
+    DomainTests --> Cashflow
+    AppTests --> Application
+    IntegrationTests --> WebApi
 ```
 
-### Arquitetura de Produção (Planejada)
+### Arquitetura de Produção
 
 A arquitetura de produção foi definida com base nos seguintes **requisitos não-funcionais**:
 
@@ -53,12 +69,12 @@ flowchart TB
             end
             
             subgraph WorkerService["Worker Service (Auto-Scale)"]
-                Worker["⚙️ Consolidation Worker"]
+                ConsolidationWorker["⚙️ Consolidation Worker"]
             end
         end
         
         subgraph Messaging["Mensageria"]
-            PubSub["📨 Cloud Pub/Sub"]
+            PubSub["📨 RabbitMQ / Cloud Pub/Sub"]
         end
         
         subgraph Database["Banco de Dados"]
@@ -76,9 +92,9 @@ flowchart TB
     API -->|Publica evento| PubSub
     API -->|Lê consolidado| Memorystore
     
-    PubSub --> Worker
-    Worker -->|Processa| CloudSQL
-    Worker -->|Atualiza cache| Memorystore
+    PubSub --> ConsolidationWorker
+    ConsolidationWorker -->|Processa| CloudSQL
+    ConsolidationWorker -->|Atualiza cache| Memorystore
 ```
 
 ### Por que essa arquitetura?
@@ -98,8 +114,8 @@ sequenceDiagram
     actor U as Usuário
     participant API as Cashflow API
     participant DB as PostgreSQL
-    participant Q as Pub/Sub
-    participant W as Worker
+    participant Q as RabbitMQ
+    participant W as ConsolidationWorker
     participant C as Redis Cache
     
     U->>API: POST /lancamentos
@@ -124,10 +140,10 @@ sequenceDiagram
 | Camada | Tecnologia | Motivo |
 |--------|------------|--------|
 | **API** | ASP.NET Minimal API | Leve, rápido, stateless |
-| **Mensageria** | Cloud Pub/Sub | Gerenciado, escalável, durável |
+| **Mensageria** | RabbitMQ / Cloud Pub/Sub | Escalável, durável |
 | **Cache** | Redis (Memorystore) | Baixa latência, distribuído |
 | **Banco** | PostgreSQL (Cloud SQL) | Confiável, suporta read replicas |
-| **Container** | Docker + GKE Autopilot | Auto-scaling, gerenciado |
+| **Container** | Docker + Kubernetes | Auto-scaling, gerenciado |
 | **Resiliência** | Polly | Circuit breaker, retry, timeout |
 
 ### Bibliotecas .NET
@@ -135,10 +151,9 @@ sequenceDiagram
 | Biblioteca | Propósito |
 |------------|-----------|
 | **Polly** | Resiliência (retry, circuit breaker) |
-| **MediatR** | CQRS, desacoplamento de handlers |
 | **FluentValidation** | Validação de requests |
 | **Serilog** | Logging estruturado |
-| **OpenTelemetry** | Observabilidade |
+| **Testcontainers** | Testes de integração |
 
 ---
 
@@ -180,30 +195,81 @@ flowchart LR
 
 ---
 
-## 🤔 Por que essa estrutura de código?
-
-### Separação `src/` e `tests/`
+## 📁 Estrutura de Pastas (Atual)
 
 ```
-├── src/           # Código de produção
-└── tests/         # Código de testes
+Cashflow.sln
+│
+├── src/
+│   ├── Cashflow/                         # 🎯 Domínio (DDD)
+│   │   ├── TipoLancamento.cs             # Enum
+│   │   ├── Lancamento.cs                 # Entidade
+│   │   ├── SaldoDiario.cs                # Value Object
+│   │   └── FluxoCaixa.cs                 # Agregado Raiz
+│   │
+│   ├── Cashflow.Application/             # 📦 Casos de Uso
+│   │   ├── Abstractions/                 # Interfaces de serviços
+│   │   ├── DTOs/                         # Data Transfer Objects
+│   │   ├── Services/                     # Implementação dos serviços
+│   │   └── Validators/                   # FluentValidation
+│   │
+│   ├── Cashflow.Infrastructure/          # 🗄️ Infraestrutura
+│   │   ├── Persistence/                  # EF Core, Repositories
+│   │   ├── Cache/                        # Redis
+│   │   └── Messaging/                    # RabbitMQ
+│   │
+│   └── Cashflow.WebApi/                  # 🌐 API REST
+│       ├── Endpoints/                    # Minimal API endpoints
+│       └── Program.cs                    # Configuração
+│
+├── workers/
+│   └── Cashflow.ConsolidationWorker/     # ⚙️ Worker de Consolidação
+│       ├── ConsolidationWorkerService.cs # Consumer RabbitMQ
+│       └── Program.cs                    # Host configuration
+│
+├── tests/
+│   ├── Cashflow.Tests/                   # Testes de domínio (26)
+│   ├── Cashflow.Application.Tests/       # Testes unitários (54)
+│   └── Cashflow.IntegrationTests/        # Testes de integração (55)
+│
+├── docs/                                 # 📚 Documentação
+│
+├── Dockerfile                            # Build da API
+├── Dockerfile.worker                     # Build do Worker
+├── docker-compose.yml                    # Infraestrutura
+└── docker-compose.override.yml           # Dev overrides
 ```
 
-**Motivos:**
-- ✅ **Clareza**: Separação óbvia entre código de produção e testes
-- ✅ **Build**: Permite compilar apenas o código de produção para deploy
-- ✅ **Convenção**: Padrão amplamente adotado na comunidade .NET
-- ✅ **CI/CD**: Facilita configuração de pipelines
+---
 
-### Class Library para o Domínio
+## 🔄 Fluxo de Dependências
 
-Optamos por uma **Class Library** (`Cashflow`) em vez de uma aplicação executável.
+```mermaid
+flowchart BT
+    DomainTests["🧪 Cashflow.Tests"]
+    AppTests["🧪 Cashflow.Application.Tests"]
+    IntTests["🧪 Cashflow.IntegrationTests"]
+    API["🌐 Cashflow.WebApi"]
+    Worker["⚙️ Cashflow.ConsolidationWorker"]
+    App["📦 Cashflow.Application"]
+    Infra["🗄️ Cashflow.Infrastructure"]
+    Domain["🎯 Cashflow<br/>(Domain)"]
+    
+    DomainTests --> Domain
+    AppTests --> App
+    IntTests --> API
+    API --> App
+    Worker --> App
+    App --> Domain
+    App --> Infra
+    Infra --> Domain
+```
 
-**Motivos:**
-- ✅ **Reutilização**: O domínio pode ser referenciado por qualquer tipo de aplicação (API, Console, Worker, etc.)
-- ✅ **Isolamento**: Regras de negócio ficam isoladas de frameworks e infraestrutura
-- ✅ **Testabilidade**: Facilita testes unitários sem dependências externas
-- ✅ **Evolução**: Permite adicionar camadas (API, Persistência) sem modificar o domínio
+**Importante:** O projeto de domínio (`Cashflow`) não tem dependências externas, apenas do .NET. Isso é intencional para:
+
+- ✅ Manter o domínio puro e testável
+- ✅ Evitar acoplamento com frameworks
+- ✅ Facilitar evolução independente
 
 ---
 
@@ -329,85 +395,6 @@ public decimal Valor { get; private set; }  // Só pode ser definido internament
 - ✅ Evita modificações acidentais
 - ✅ Thread-safety mais simples
 - ✅ Facilita raciocínio sobre o código
-
----
-
-## 📁 Estrutura de Pastas (Atual)
-
-```
-Cashflow.sln
-│
-├── src/
-│   └── Cashflow/
-│       ├── Cashflow.csproj
-│       ├── TipoLancamento.cs      # Enum
-│       ├── Lancamento.cs          # Entidade
-│       ├── SaldoDiario.cs         # Value Object
-│       └── FluxoCaixa.cs          # Agregado Raiz
-│
-├── tests/
-│   └── Cashflow.Tests/
-│       ├── Cashflow.Tests.csproj
-│       ├── LancamentoTests.cs
-│       ├── SaldoDiarioTests.cs
-│       └── FluxoCaixaTests.cs
-│
-└── docs/
-    ├── ARQUITETURA.md             # Este arquivo
-    ├── DOMINIO.md
-    ├── TESTES.md
-    ├── CUSTOS.md
-    └── ROADMAP.md
-```
-
-## 📁 Estrutura de Pastas (Planejada)
-
-```
-Cashflow.sln
-│
-├── src/
-│   ├── Cashflow/                  # Domínio (atual)
-│   ├── Cashflow.Application/      # Casos de uso, CQRS
-│   ├── Cashflow.Infrastructure/   # Persistência, Cache
-│   └── Cashflow.API/              # Web API
-│
-├── workers/
-│   └── Cashflow.ConsolidationWorker/  # Worker de consolidação
-│
-├── tests/
-│   ├── Cashflow.Tests/                # Testes de domínio
-│   ├── Cashflow.Application.Tests/    # Testes de aplicação
-│   └── Cashflow.API.Tests/            # Testes de integração
-│
-└── docs/
-```
-
----
-
-## 🔄 Fluxo de Dependências
-
-```mermaid
-flowchart BT
-    Tests["🧪 Cashflow.Tests"]
-    API["🌐 Cashflow.API"]
-    Worker["⚙️ Cashflow.Worker"]
-    App["📦 Cashflow.Application"]
-    Infra["🗄️ Cashflow.Infrastructure"]
-    Domain["🎯 Cashflow<br/>(Domain)"]
-    
-    Tests --> Domain
-    API --> App
-    Worker --> App
-    App --> Domain
-    App --> Infra
-    Infra --> Domain
-```
-
-**Importante:** O projeto de domínio (`Cashflow`) não tem dependências externas, apenas do .NET. Isso é intencional para:
-
-- ✅ Manter o domínio puro e testável
-- ✅ Evitar acoplamento com frameworks
-- ✅ Facilitar evolução independente
 
 ---
 
