@@ -8,6 +8,15 @@ using Shouldly;
 
 namespace Cashflow.IntegrationTests.Repositories;
 
+// Helper para criar datas UTC consistentes nos testes
+file static class TestDates
+{
+    public static DateTime Today => DateTime.UtcNow.Date;
+    public static DateTime Yesterday => Today.AddDays(-1);
+    public static DateTime UtcDate(int year, int month, int day) => 
+        new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Utc);
+}
+
 /// <summary>
 /// Testes de integração para LancamentoRepository
 /// </summary>
@@ -44,7 +53,7 @@ public class LancamentoRepositoryTests : IAsyncLifetime
         var lancamento = new Lancamento(
             valor: 100m,
             tipo: TipoLancamento.Credito,
-            data: DateTime.Today,
+            data: TestDates.Today,
             descricao: "Teste de integração");
 
         // Act
@@ -64,7 +73,7 @@ public class LancamentoRepositoryTests : IAsyncLifetime
         var lancamento = new Lancamento(
             valor: 250m,
             tipo: TipoLancamento.Debito,
-            data: DateTime.Today,
+            data: TestDates.Today,
             descricao: "Lançamento para busca");
 
         await _repository.AdicionarAsync(lancamento);
@@ -93,8 +102,8 @@ public class LancamentoRepositoryTests : IAsyncLifetime
     public async Task ObterPorDataAsync_DeveRetornarLancamentosDoDia()
     {
         // Arrange
-        var hoje = DateTime.Today;
-        var ontem = hoje.AddDays(-1);
+        var hoje = TestDates.Today;
+        var ontem = TestDates.Yesterday;
 
         await _repository.AdicionarAsync(new Lancamento(100m, TipoLancamento.Credito, hoje, "Hoje 1"));
         await _repository.AdicionarAsync(new Lancamento(200m, TipoLancamento.Credito, hoje, "Hoje 2"));
@@ -112,13 +121,13 @@ public class LancamentoRepositoryTests : IAsyncLifetime
     public async Task ObterPorPeriodoAsync_DeveRetornarLancamentosDoPeriodo()
     {
         // Arrange
-        var dataInicio = new DateTime(2024, 6, 1);
-        var dataFim = new DateTime(2024, 6, 30);
+        var dataInicio = TestDates.UtcDate(2024, 6, 1);
+        var dataFim = TestDates.UtcDate(2024, 6, 30);
 
-        await _repository.AdicionarAsync(new Lancamento(100m, TipoLancamento.Credito, new DateTime(2024, 5, 31), "Maio"));
-        await _repository.AdicionarAsync(new Lancamento(200m, TipoLancamento.Credito, new DateTime(2024, 6, 15), "Junho"));
-        await _repository.AdicionarAsync(new Lancamento(300m, TipoLancamento.Debito, new DateTime(2024, 6, 20), "Junho 2"));
-        await _repository.AdicionarAsync(new Lancamento(400m, TipoLancamento.Credito, new DateTime(2024, 7, 1), "Julho"));
+        await _repository.AdicionarAsync(new Lancamento(100m, TipoLancamento.Credito, TestDates.UtcDate(2024, 5, 31), "Maio"));
+        await _repository.AdicionarAsync(new Lancamento(200m, TipoLancamento.Credito, TestDates.UtcDate(2024, 6, 15), "Junho"));
+        await _repository.AdicionarAsync(new Lancamento(300m, TipoLancamento.Debito, TestDates.UtcDate(2024, 6, 20), "Junho 2"));
+        await _repository.AdicionarAsync(new Lancamento(400m, TipoLancamento.Credito, TestDates.UtcDate(2024, 7, 1), "Julho"));
 
         // Act
         var resultado = (await _repository.ObterPorPeriodoAsync(dataInicio, dataFim)).ToList();
@@ -137,7 +146,7 @@ public class LancamentoRepositoryTests : IAsyncLifetime
             await _repository.AdicionarAsync(new Lancamento(
                 100m + i,
                 TipoLancamento.Credito,
-                DateTime.Today.AddDays(-i),
+                TestDates.Today.AddDays(-i),
                 $"Lançamento {i + 1}"));
         }
 
@@ -154,9 +163,9 @@ public class LancamentoRepositoryTests : IAsyncLifetime
     public async Task ContarAsync_DeveRetornarQuantidadeCorreta()
     {
         // Arrange
-        await _repository.AdicionarAsync(new Lancamento(100m, TipoLancamento.Credito, DateTime.Today, "Teste 1"));
-        await _repository.AdicionarAsync(new Lancamento(200m, TipoLancamento.Debito, DateTime.Today, "Teste 2"));
-        await _repository.AdicionarAsync(new Lancamento(300m, TipoLancamento.Credito, DateTime.Today, "Teste 3"));
+        await _repository.AdicionarAsync(new Lancamento(100m, TipoLancamento.Credito, TestDates.Today, "Teste 1"));
+        await _repository.AdicionarAsync(new Lancamento(200m, TipoLancamento.Debito, TestDates.Today, "Teste 2"));
+        await _repository.AdicionarAsync(new Lancamento(300m, TipoLancamento.Credito, TestDates.Today, "Teste 3"));
 
         // Act
         var quantidade = await _repository.ContarAsync();
@@ -169,12 +178,12 @@ public class LancamentoRepositoryTests : IAsyncLifetime
     public async Task AdicionarMultiplosLancamentos_DeveCalcularSaldoCorretamente()
     {
         // Arrange & Act
-        await _repository.AdicionarAsync(new Lancamento(1000m, TipoLancamento.Credito, DateTime.Today, "Venda 1"));
-        await _repository.AdicionarAsync(new Lancamento(500m, TipoLancamento.Credito, DateTime.Today, "Venda 2"));
-        await _repository.AdicionarAsync(new Lancamento(300m, TipoLancamento.Debito, DateTime.Today, "Pagamento"));
-        await _repository.AdicionarAsync(new Lancamento(200m, TipoLancamento.Debito, DateTime.Today, "Compra"));
+        await _repository.AdicionarAsync(new Lancamento(1000m, TipoLancamento.Credito, TestDates.Today, "Venda 1"));
+        await _repository.AdicionarAsync(new Lancamento(500m, TipoLancamento.Credito, TestDates.Today, "Venda 2"));
+        await _repository.AdicionarAsync(new Lancamento(300m, TipoLancamento.Debito, TestDates.Today, "Pagamento"));
+        await _repository.AdicionarAsync(new Lancamento(200m, TipoLancamento.Debito, TestDates.Today, "Compra"));
 
-        var lancamentos = (await _repository.ObterPorDataAsync(DateTime.Today)).ToList();
+        var lancamentos = (await _repository.ObterPorDataAsync(TestDates.Today)).ToList();
 
         // Assert
         var totalCreditos = lancamentos.Where(l => l.Tipo == TipoLancamento.Credito).Sum(l => l.Valor);

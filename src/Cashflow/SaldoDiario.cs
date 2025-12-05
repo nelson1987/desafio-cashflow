@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Cashflow;
 
 /// <summary>
@@ -5,9 +7,16 @@ namespace Cashflow;
 /// </summary>
 public class SaldoDiario
 {
+    [JsonInclude]
     public DateTime Data { get; private set; }
+    
+    [JsonInclude]
     public decimal TotalCreditos { get; private set; }
+    
+    [JsonInclude]
     public decimal TotalDebitos { get; private set; }
+    
+    [JsonInclude]
     public int QuantidadeLancamentos { get; private set; }
 
     /// <summary>
@@ -15,7 +24,11 @@ public class SaldoDiario
     /// </summary>
     public decimal Saldo => TotalCreditos - TotalDebitos;
 
-    private SaldoDiario() { }
+    /// <summary>
+    /// Construtor para deserialização JSON
+    /// </summary>
+    [JsonConstructor]
+    public SaldoDiario() { }
 
     /// <summary>
     /// Construtor para criação direta com valores (usado em testes e reconstrução de persistência)

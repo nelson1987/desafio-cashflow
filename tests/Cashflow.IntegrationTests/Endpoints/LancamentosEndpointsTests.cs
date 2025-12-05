@@ -9,6 +9,12 @@ using Shouldly;
 
 namespace Cashflow.IntegrationTests.Endpoints;
 
+// Helper para criar datas UTC consistentes nos testes
+file static class TestDates
+{
+    public static DateTime Today => DateTime.UtcNow.Date;
+}
+
 /// <summary>
 /// Testes de integração para os endpoints de Lançamentos
 /// </summary>
@@ -42,7 +48,7 @@ public class LancamentosEndpointsTests : IAsyncLifetime
         {
             Valor = 100.50m,
             Tipo = TipoLancamento.Credito,
-            Data = DateTime.Today,
+            Data = TestDates.Today,
             Descricao = "Venda de produto"
         };
 
@@ -69,7 +75,7 @@ public class LancamentosEndpointsTests : IAsyncLifetime
         {
             Valor = 0,
             Tipo = TipoLancamento.Credito,
-            Data = DateTime.Today,
+            Data = TestDates.Today,
             Descricao = "Teste"
         };
 
@@ -88,7 +94,7 @@ public class LancamentosEndpointsTests : IAsyncLifetime
         {
             Valor = 100m,
             Tipo = TipoLancamento.Debito,
-            Data = DateTime.Today,
+            Data = TestDates.Today,
             Descricao = ""
         };
 
@@ -107,7 +113,7 @@ public class LancamentosEndpointsTests : IAsyncLifetime
         {
             Valor = 50.00m,
             Tipo = TipoLancamento.Debito,
-            Data = DateTime.Today,
+            Data = TestDates.Today,
             Descricao = "Pagamento de fornecedor"
         };
 
@@ -226,7 +232,7 @@ public class LancamentosEndpointsTests : IAsyncLifetime
     public async Task ObterPorData_ComLancamentos_DeveRetornarLista()
     {
         // Arrange
-        var data = DateTime.Today;
+        var data = TestDates.Today;
         await CriarLancamentoAsync(100m, TipoLancamento.Credito, "Lançamento 1", data);
         await CriarLancamentoAsync(200m, TipoLancamento.Debito, "Lançamento 2", data);
         await CriarLancamentoAsync(300m, TipoLancamento.Credito, "Lançamento outro dia", data.AddDays(-1));
@@ -246,7 +252,7 @@ public class LancamentosEndpointsTests : IAsyncLifetime
     public async Task ObterPorData_SemLancamentos_DeveRetornarListaVazia()
     {
         // Arrange
-        var data = DateTime.Today.AddDays(-30);
+        var data = TestDates.Today.AddDays(-30);
 
         // Act
         var response = await _client.GetAsync($"/api/lancamentos/data/{data:yyyy-MM-dd}");
@@ -273,7 +279,7 @@ public class LancamentosEndpointsTests : IAsyncLifetime
         {
             Valor = valor,
             Tipo = tipo,
-            Data = data ?? DateTime.Today,
+            Data = data ?? TestDates.Today,
             Descricao = descricao
         };
 

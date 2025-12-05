@@ -191,8 +191,9 @@ public class RedisCacheServiceTests : IAsyncLifetime
     {
         // Arrange
         var chave = "teste:objeto-complexo:1";
+        var dataUtc = DateTime.UtcNow.Date;
         var saldoDiario = new SaldoDiario(
-            data: DateTime.Today,
+            data: dataUtc,
             totalCreditos: 5000m,
             totalDebitos: 2000m,
             quantidadeLancamentos: 15);
@@ -203,7 +204,7 @@ public class RedisCacheServiceTests : IAsyncLifetime
 
         // Assert
         resultado.ShouldNotBeNull();
-        resultado.Data.ShouldBe(DateTime.Today);
+        resultado.Data.ShouldBe(dataUtc);
         resultado.TotalCreditos.ShouldBe(5000m);
         resultado.TotalDebitos.ShouldBe(2000m);
         resultado.Saldo.ShouldBe(3000m);

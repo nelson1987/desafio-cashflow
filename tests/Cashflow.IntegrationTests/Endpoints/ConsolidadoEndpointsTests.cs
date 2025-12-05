@@ -9,6 +9,12 @@ using Shouldly;
 
 namespace Cashflow.IntegrationTests.Endpoints;
 
+// Helper para criar datas UTC consistentes nos testes
+file static class TestDates
+{
+    public static DateTime Today => DateTime.UtcNow.Date;
+}
+
 /// <summary>
 /// Testes de integração para os endpoints de Consolidado
 /// </summary>
@@ -38,7 +44,7 @@ public class ConsolidadoEndpointsTests : IAsyncLifetime
     public async Task ObterConsolidadoPorData_SemLancamentos_DeveRetornarSaldoZerado()
     {
         // Arrange
-        var data = DateTime.Today;
+        var data = TestDates.Today;
 
         // Act
         var response = await _client.GetAsync($"/api/consolidado/{data:yyyy-MM-dd}");
@@ -59,7 +65,7 @@ public class ConsolidadoEndpointsTests : IAsyncLifetime
     public async Task ObterConsolidadoPorData_ComLancamentos_DeveRetornarSaldoCalculado()
     {
         // Arrange
-        var data = DateTime.Today;
+        var data = TestDates.Today;
         await CriarLancamentoAsync(100m, TipoLancamento.Credito, "Crédito 1", data);
         await CriarLancamentoAsync(200m, TipoLancamento.Credito, "Crédito 2", data);
         await CriarLancamentoAsync(50m, TipoLancamento.Debito, "Débito 1", data);
@@ -89,8 +95,8 @@ public class ConsolidadoEndpointsTests : IAsyncLifetime
     public async Task ObterConsolidadoPorPeriodo_PeriodoValido_DeveRetornarRelatorio()
     {
         // Arrange
-        var dataInicio = DateTime.Today.AddDays(-2);
-        var dataFim = DateTime.Today;
+        var dataInicio = TestDates.Today.AddDays(-2);
+        var dataFim = TestDates.Today;
 
         await CriarLancamentoAsync(100m, TipoLancamento.Credito, "Dia 1", dataInicio);
         await CriarLancamentoAsync(200m, TipoLancamento.Debito, "Dia 2", dataInicio.AddDays(1));
@@ -119,8 +125,8 @@ public class ConsolidadoEndpointsTests : IAsyncLifetime
     public async Task ObterConsolidadoPorPeriodo_DataInicioMaiorQueFim_DeveRetornar400()
     {
         // Arrange
-        var dataInicio = DateTime.Today;
-        var dataFim = DateTime.Today.AddDays(-5);
+        var dataInicio = TestDates.Today;
+        var dataFim = TestDates.Today.AddDays(-5);
 
         // Act
         var response = await _client.GetAsync($"/api/consolidado/periodo?dataInicio={dataInicio:yyyy-MM-dd}&dataFim={dataFim:yyyy-MM-dd}");
@@ -133,8 +139,8 @@ public class ConsolidadoEndpointsTests : IAsyncLifetime
     public async Task ObterConsolidadoPorPeriodo_PeriodoMaiorQue90Dias_DeveRetornar400()
     {
         // Arrange
-        var dataInicio = DateTime.Today.AddDays(-100);
-        var dataFim = DateTime.Today;
+        var dataInicio = TestDates.Today.AddDays(-100);
+        var dataFim = TestDates.Today;
 
         // Act
         var response = await _client.GetAsync($"/api/consolidado/periodo?dataInicio={dataInicio:yyyy-MM-dd}&dataFim={dataFim:yyyy-MM-dd}");
@@ -151,7 +157,7 @@ public class ConsolidadoEndpointsTests : IAsyncLifetime
     public async Task RecalcularConsolidado_DeveAtualizarSaldo()
     {
         // Arrange
-        var data = DateTime.Today;
+        var data = TestDates.Today;
         await CriarLancamentoAsync(500m, TipoLancamento.Credito, "Venda", data);
         await CriarLancamentoAsync(150m, TipoLancamento.Debito, "Compra", data);
 
@@ -173,7 +179,7 @@ public class ConsolidadoEndpointsTests : IAsyncLifetime
     public async Task RecalcularConsolidado_SemLancamentos_DeveRetornarSaldoZerado()
     {
         // Arrange
-        var data = DateTime.Today.AddDays(-10);
+        var data = TestDates.Today.AddDays(-10);
 
         // Act
         var response = await _client.PostAsync($"/api/consolidado/{data:yyyy-MM-dd}/recalcular", null);
@@ -201,7 +207,7 @@ public class ConsolidadoEndpointsTests : IAsyncLifetime
         {
             Valor = valor,
             Tipo = tipo,
-            Data = data ?? DateTime.Today,
+            Data = data ?? TestDates.Today,
             Descricao = descricao
         };
 

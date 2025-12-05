@@ -8,6 +8,14 @@ using Shouldly;
 
 namespace Cashflow.IntegrationTests.Repositories;
 
+// Helper para criar datas UTC consistentes nos testes
+file static class SaldoTestDates
+{
+    public static DateTime Today => DateTime.UtcNow.Date;
+    public static DateTime UtcDate(int year, int month, int day) => 
+        new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Utc);
+}
+
 /// <summary>
 /// Testes de integração para SaldoConsolidadoRepository
 /// </summary>
@@ -42,7 +50,7 @@ public class SaldoConsolidadoRepositoryTests : IAsyncLifetime
     {
         // Arrange
         var saldo = new SaldoDiario(
-            data: DateTime.Today,
+            data: SaldoTestDates.Today,
             totalCreditos: 1000m,
             totalDebitos: 400m,
             quantidadeLancamentos: 5);
@@ -51,7 +59,7 @@ public class SaldoConsolidadoRepositoryTests : IAsyncLifetime
         await _repository.SalvarAsync(saldo);
 
         // Assert
-        var resultado = await _repository.ObterPorDataAsync(DateTime.Today);
+        var resultado = await _repository.ObterPorDataAsync(SaldoTestDates.Today);
         resultado.ShouldNotBeNull();
         resultado.TotalCreditos.ShouldBe(1000m);
         resultado.TotalDebitos.ShouldBe(400m);
@@ -63,16 +71,16 @@ public class SaldoConsolidadoRepositoryTests : IAsyncLifetime
     public async Task SalvarAsync_DeveAtualizarSaldoExistente()
     {
         // Arrange
-        var saldoOriginal = new SaldoDiario(DateTime.Today, 500m, 200m, 3);
+        var saldoOriginal = new SaldoDiario(SaldoTestDates.Today, 500m, 200m, 3);
         await _repository.SalvarAsync(saldoOriginal);
 
-        var saldoAtualizado = new SaldoDiario(DateTime.Today, 800m, 300m, 5);
+        var saldoAtualizado = new SaldoDiario(SaldoTestDates.Today, 800m, 300m, 5);
 
         // Act
         await _repository.SalvarAsync(saldoAtualizado);
 
         // Assert
-        var resultado = await _repository.ObterPorDataAsync(DateTime.Today);
+        var resultado = await _repository.ObterPorDataAsync(SaldoTestDates.Today);
         resultado.ShouldNotBeNull();
         resultado.TotalCreditos.ShouldBe(800m);
         resultado.TotalDebitos.ShouldBe(300m);

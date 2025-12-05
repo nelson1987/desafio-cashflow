@@ -84,7 +84,7 @@ public class RabbitMqIntegrationTests : IAsyncLifetime
         var lancamento = new Lancamento(
             valor: 1000m,
             tipo: TipoLancamento.Credito,
-            data: DateTime.Today,
+            data: DateTime.UtcNow.Date,
             descricao: "Teste de evento");
 
         var evento = new LancamentoCriadoEvent(lancamento);
