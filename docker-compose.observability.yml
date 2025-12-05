@@ -32,16 +32,37 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./docker/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--web.enable-lifecycle'
       - '--web.enable-remote-write-receiver'
+      - '--config.file=/etc/prometheus/prometheus.yml'
     networks:
       - cashflow-network
     restart: unless-stopped
+    # Configuração inline via heredoc
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        cat > /etc/prometheus/prometheus.yml << 'EOF'
+        global:
+          scrape_interval: 15s
+          evaluation_interval: 15s
+        scrape_configs:
+          - job_name: 'prometheus'
+            static_configs:
+              - targets: ['localhost:9090']
+          - job_name: 'cashflow-api'
+            metrics_path: /metrics
+            static_configs:
+              - targets: ['host.docker.internal:5000', 'api:8080']
+                labels:
+                  app: 'cashflow-api'
+            scrape_timeout: 10s
+        EOF
+        /bin/prometheus --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus --web.enable-lifecycle
 
   # ==========================================
   # 📝 Loki - Logs
@@ -52,12 +73,40 @@ services:
     ports:
       - "3100:3100"
     volumes:
-      - ./docker/observability/loki-config.yml:/etc/loki/local-config.yaml:ro
       - loki-data:/loki
-    command: -config.file=/etc/loki/local-config.yaml
     networks:
       - cashflow-network
     restart: unless-stopped
+    command: -config.file=/etc/loki/local-config.yaml
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        cat > /etc/loki/local-config.yaml << 'EOF'
+        auth_enabled: false
+        server:
+          http_listen_port: 3100
+        common:
+          path_prefix: /loki
+          storage:
+            filesystem:
+              chunks_directory: /loki/chunks
+              rules_directory: /loki/rules
+          replication_factor: 1
+          ring:
+            kvstore:
+              store: inmemory
+        schema_config:
+          configs:
+            - from: 2020-10-24
+              store: boltdb-shipper
+              object_store: filesystem
+              schema: v11
+              index:
+                prefix: index_
+                period: 24h
+        EOF
+        /usr/bin/loki -config.file=/etc/loki/local-config.yaml
 
   # ==========================================
   # 📈 Grafana - Dashboard
@@ -74,8 +123,6 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
     volumes:
-      - ./docker/observability/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./docker/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana-data:/var/lib/grafana
     depends_on:
       - prometheus
@@ -84,14 +131,36 @@ services:
     networks:
       - cashflow-network
     restart: unless-stopped
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        mkdir -p /etc/grafana/provisioning/datasources
+        cat > /etc/grafana/provisioning/datasources/datasources.yml << 'EOF'
+        apiVersion: 1
+        datasources:
+          - name: Prometheus
+            type: prometheus
+            access: proxy
+            url: http://prometheus:9090
+            isDefault: true
+          - name: Loki
+            type: loki
+            access: proxy
+            url: http://loki:3100
+          - name: Jaeger
+            type: jaeger
+            access: proxy
+            url: http://jaeger:16686
+            uid: jaeger
+        EOF
+        /run.sh
 
 networks:
   cashflow-network:
-    name: cashflow-network
-    external: false
+    external: true
 
 volumes:
   prometheus-data:
   loki-data:
   grafana-data:
-
