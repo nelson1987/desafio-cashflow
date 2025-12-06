@@ -11,11 +11,15 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Manual de instalação completo (`docs/INSTALACAO.md`)
 - Seção Quick Start no README
 - Troubleshooting para erro de ICU no Alpine
+- Explicação sobre o `docker-compose.override.yml` na documentação do Docker.
 
 ### Corrigido
 - Instalação de `icu-libs` no Dockerfile para suporte a globalização
 - Remoção de `target: build` no docker-compose.override.yml
 - Remoção de volumes desnecessários na configuração de produção
+- Remoção de caminhos locais fixos nos comandos de instalação.
+- Consistência dos comandos `docker compose` entre os documentos.
+- Exemplo de `curl` no `README.md` para incluir o campo `descricao`.
 
 ## [1.5.0] - 2024-12-05
 

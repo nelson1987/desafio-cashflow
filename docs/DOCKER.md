@@ -58,7 +58,7 @@ docker compose --profile tools up -d
 
 ```bash
 # Inclui API e Worker
-docker compose --profile app up -d
+docker compose --profile app up -d --build
 ```
 
 ### 5. Executar testes no container
@@ -135,11 +135,8 @@ REDIS_COMMANDER_PORT=8082
 Para monitoramento completo, suba também a stack de observabilidade:
 
 ```bash
-# Criar rede compartilhada
-docker network create cashflow-network
-
-# Subir infraestrutura
-docker compose up -d
+# Subir infraestrutura e aplicação
+docker compose --profile app up -d --build
 
 # Subir observabilidade (Grafana, Prometheus, Loki, Jaeger)
 docker compose -f docker-compose.observability.yml up -d
@@ -178,6 +175,15 @@ docker compose -f docker-compose.observability.yml up -d
             ├── provisioning/       # Datasources e dashboards
             └── dashboards/         # JSON dos dashboards
 ```
+
+### `docker-compose.override.yml`
+
+Este arquivo é usado para sobrescrever as configurações do `docker-compose.yml` em ambiente de desenvolvimento. Por padrão, ele:
+- Adiciona a API e o Worker ao compose.
+- Mapeia o código-fonte local para dentro dos containers, permitindo o hot-reload.
+- Expõe as portas da aplicação.
+
+Este arquivo é carregado automaticamente pelo Docker Compose, não sendo necessário especificá-lo com a flag `-f`.
 
 ## 💻 Comandos Úteis
 

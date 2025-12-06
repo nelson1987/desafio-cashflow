@@ -47,9 +47,10 @@ Este documento descreve a stack de observabilidade do projeto Cashflow.
 
 ### Comando Único (Recomendado)
 
+> **💡 Nota:** Execute o comando abaixo a partir do diretório raiz do projeto.
+
 ```bash
 # Sobe tudo: API, Worker, Infraestrutura + Observabilidade
-cd /mnt/c/git/desafio-cashflow && \
 docker compose --profile app up -d --build && \
 docker compose -f docker-compose.observability.yml up -d && \
 docker network connect desafio-cashflow_cashflow-network cashflow-grafana 2>/dev/null; \

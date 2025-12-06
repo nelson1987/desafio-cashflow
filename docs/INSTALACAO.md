@@ -18,8 +18,9 @@ Guia completo para executar o projeto Cashflow com todas as ferramentas.
 
 ### Comando Único
 
+> **💡 Nota:** Execute o comando abaixo a partir do diretório raiz do projeto.
+
 ```bash
-cd /mnt/c/git/desafio-cashflow && \
 docker compose --profile app up -d --build && \
 docker compose -f docker-compose.observability.yml up -d && \
 docker network connect desafio-cashflow_cashflow-network cashflow-grafana 2>/dev/null; \
@@ -35,7 +36,8 @@ curl -s http://localhost:5000/health && echo " ✅ API está saudável!"
 
 ```bash
 # 1. Navegar para o projeto
-cd /mnt/c/git/desafio-cashflow
+# Navegue para o diretório onde o projeto foi clonado. Ex:
+# cd /path/to/desafio-cashflow
 
 # 2. Subir infraestrutura + API + Worker
 docker compose --profile app up -d --build
@@ -60,8 +62,9 @@ curl http://localhost:5000/health
 
 ### Comando Único
 
+> **💡 Nota:** Execute o comando abaixo a partir do diretório raiz do projeto.
+
 ```powershell
-cd C:\git\desafio-cashflow; `
 docker compose --profile app up -d --build; `
 docker compose -f docker-compose.observability.yml up -d; `
 docker network connect desafio-cashflow_cashflow-network cashflow-grafana 2>$null; `

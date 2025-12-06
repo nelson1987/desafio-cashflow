@@ -224,7 +224,7 @@ GET /api/consolidado/2024-12-05
 
 ---
 
-#### `GET /api/consolidado/periodo`
+#### `GET /api/consolidado/periodo?dataInicio={dataInicio}&dataFim={dataFim}`
 
 Obtém relatório consolidado por período.
 
