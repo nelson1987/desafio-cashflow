@@ -127,18 +127,18 @@ services:
     ports:
       - "${API_PORT:-5000}:8080"
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
-      ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__PostgreSQL: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-cashflow_db};Username=${POSTGRES_USER:-cashflow};Password=${POSTGRES_PASSWORD:-cashflow123}"
-      ConnectionStrings__Redis: "redis:6379"
-      RabbitMQ__Host: rabbitmq
-      RabbitMQ__Port: 5672
-      RabbitMQ__Username: ${RABBITMQ_USER:-cashflow}
-      RabbitMQ__Password: ${RABBITMQ_PASSWORD:-cashflow123}
-      RabbitMQ__VirtualHost: ${RABBITMQ_VHOST:-cashflow}
-      Database__ApplyMigrationsOnStartup: "true"
-      Observability__OtlpEndpoint: http://jaeger:4317
-      Observability__LokiUrl: http://loki:3100
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__PostgreSQL=Host=postgres;Port=5432;Database=${POSTGRES_DB:-cashflow_db};Username=${POSTGRES_USER:-cashflow};Password=${POSTGRES_PASSWORD:-cashflow123}
+      - ConnectionStrings__Redis=redis:6379
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__Username=${RABBITMQ_USER:-cashflow}
+      - RabbitMQ__Password=${RABBITMQ_PASSWORD:-cashflow123}
+      - RabbitMQ__VirtualHost=${RABBITMQ_VHOST:-cashflow}
+      - Database__ApplyMigrationsOnStartup=${DATABASE_APPLYMIGRATIONSONSTARTUP:-true}
+      - Observability__OtlpEndpoint=${OBSERVABILITY_OTLPENDPOINT:-http://jaeger:4317}
+      - Observability__LokiUrl=${OBSERVABILITY_LOKIURL:-http://loki:3100}
     depends_on:
       postgres:
         condition: service_healthy
@@ -167,18 +167,18 @@ services:
     container_name: cashflow-worker
     restart: unless-stopped
     environment:
-      DOTNET_ENVIRONMENT: Development
-      ConnectionStrings__PostgreSQL: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-cashflow_db};Username=${POSTGRES_USER:-cashflow};Password=${POSTGRES_PASSWORD:-cashflow123}"
-      ConnectionStrings__Redis: "redis:6379"
-      RabbitMQ__Host: rabbitmq
-      RabbitMQ__Port: 5672
-      RabbitMQ__Username: ${RABBITMQ_USER:-cashflow}
-      RabbitMQ__Password: ${RABBITMQ_PASSWORD:-cashflow123}
-      RabbitMQ__VirtualHost: ${RABBITMQ_VHOST:-cashflow}
-      RabbitMQ__Queue: cashflow.consolidation
-      RabbitMQ__RoutingKey: "lancamento.#"
-      Observability__OtlpEndpoint: http://jaeger:4317
-      Observability__LokiUrl: http://loki:3100
+      - DOTNET_ENVIRONMENT=${DOTNET_ENVIRONMENT:-Development}
+      - ConnectionStrings__PostgreSQL=Host=postgres;Port=5432;Database=${POSTGRES_DB:-cashflow_db};Username=${POSTGRES_USER:-cashflow};Password=${POSTGRES_PASSWORD:-cashflow123}
+      - ConnectionStrings__Redis=redis:6379
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__Username=${RABBITMQ_USER:-cashflow}
+      - RabbitMQ__Password=${RABBITMQ_PASSWORD:-cashflow123}
+      - RabbitMQ__VirtualHost=${RABBITMQ_VHOST:-cashflow}
+      - RabbitMQ__Queue=${RABBITMQ_QUEUE:-cashflow.consolidation}
+      - RabbitMQ__RoutingKey=${RABBITMQ_ROUTINGKEY:-"lancamento.#"}
+      - Observability__OtlpEndpoint=${OBSERVABILITY_OTLPENDPOINT:-http://jaeger:4317}
+      - Observability__LokiUrl=${OBSERVABILITY_LOKIURL:-http://loki:3100}
     depends_on:
       postgres:
         condition: service_healthy
@@ -211,6 +211,3 @@ networks:
     ipam:
       config:
         - subnet: 172.28.0.0/16
-
-
-
