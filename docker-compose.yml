@@ -191,6 +191,92 @@ services:
     profiles:
       - app
 
+  # ==========================================
+  # 🔍 Jaeger - Distributed Tracing
+  # ==========================================
+  jaeger:
+    image: jaegertracing/all-in-one:1.53
+    container_name: cashflow-jaeger
+    ports:
+      - "16686:16686" # UI
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - cashflow-network
+    restart: unless-stopped
+    profiles:
+      - observability
+
+  # ==========================================
+  # 📊 Prometheus - Métricas
+  # ==========================================
+  prometheus:
+    image: prom/prometheus:v2.48.1
+    container_name: cashflow-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - prometheus-data:/prometheus
+      - ./docker/observability/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+      - '--web.enable-remote-write-receiver'
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    networks:
+      - cashflow-network
+    restart: unless-stopped
+    profiles:
+      - observability
+
+  # ==========================================
+  # 📝 Loki - Logs
+  # ==========================================
+  loki:
+    image: grafana/loki:2.9.3
+    container_name: cashflow-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki-data:/loki
+      - ./docker/observability/loki-config.yml:/etc/loki/local-config.yaml
+    command:
+      - -config.file=/etc/loki/local-config.yaml
+    networks:
+      - cashflow-network
+    restart: unless-stopped
+    profiles:
+      - observability
+
+  # ==========================================
+  # 📈 Grafana - Dashboard
+  # ==========================================
+  grafana:
+    image: grafana/grafana:10.2.3
+    container_name: cashflow-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=cashflow123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./docker/observability/grafana/provisioning/:/etc/grafana/provisioning/
+    depends_on:
+      - prometheus
+      - loki
+      - jaeger
+    networks:
+      - cashflow-network
+    restart: unless-stopped
+    profiles:
+      - observability
+
 # ============================================
 # 📁 Volumes Persistentes
 # ============================================
@@ -200,6 +286,12 @@ volumes:
   redis_data:
     driver: local
   rabbitmq_data:
+    driver: local
+  prometheus-data:
+    driver: local
+  loki-data:
+    driver: local
+  grafana-data:
     driver: local
 
 # ============================================

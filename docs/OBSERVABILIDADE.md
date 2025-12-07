@@ -51,41 +51,27 @@ Este documento descreve a stack de observabilidade do projeto Cashflow.
 
 ```bash
 # Sobe tudo: API, Worker, Infraestrutura + Observabilidade
-docker compose --profile app up -d --build && \
-docker compose -f docker-compose.observability.yml up -d && \
-docker network connect desafio-cashflow_cashflow-network cashflow-grafana 2>/dev/null; \
-docker network connect desafio-cashflow_cashflow-network cashflow-prometheus 2>/dev/null; \
-docker network connect desafio-cashflow_cashflow-network cashflow-loki 2>/dev/null; \
-docker network connect desafio-cashflow_cashflow-network cashflow-jaeger 2>/dev/null
+docker compose --profile app --profile observability up -d --build
 ```
 
 ### Passo a Passo
 
-#### 1. Subir infraestrutura + aplicação
+#### 1. Subir a stack de observabilidade com a infraestrutura
 
 ```bash
-docker compose --profile app up -d --build
+docker compose --profile observability up -d
 ```
 
-#### 2. Subir a stack de observabilidade
+#### 2. (Opcional) Subir a aplicação junto
 
 ```bash
-docker compose -f docker-compose.observability.yml up -d
+docker compose --profile app --profile observability up -d --build
 ```
 
-#### 3. Conectar containers na mesma rede
+#### 3. Verificar se todos estão rodando
 
 ```bash
-docker network connect desafio-cashflow_cashflow-network cashflow-grafana
-docker network connect desafio-cashflow_cashflow-network cashflow-prometheus
-docker network connect desafio-cashflow_cashflow-network cashflow-loki
-docker network connect desafio-cashflow_cashflow-network cashflow-jaeger
-```
-
-#### 4. Verificar se todos estão rodando
-
-```bash
-docker ps --format "table {{.Names}}\t{{.Status}}" | grep cashflow
+docker compose ps
 ```
 
 ### 3. Acessar os dashboards

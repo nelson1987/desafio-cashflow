@@ -132,17 +132,20 @@ REDIS_COMMANDER_PORT=8082
 
 ## 📊 Observabilidade
 
-Para monitoramento completo, suba também a stack de observabilidade:
+Para monitoramento completo, suba a stack de observabilidade usando o perfil `observability`:
 
 ```bash
-# Subir infraestrutura e aplicação
-docker compose --profile app up -d --build
-
-# Subir observabilidade (Grafana, Prometheus, Loki, Jaeger)
-docker compose -f docker-compose.observability.yml up -d
+# Subir infraestrutura, aplicação e observabilidade
+docker compose --profile app --profile observability up -d --build
 ```
 
-### Serviços de Observabilidade
+Ou, se quiser apenas a stack de observabilidade com a infraestrutura base:
+
+```bash
+docker compose --profile observability up -d
+```
+
+### Serviços de Observabilidade (profile: observability)
 
 | Serviço | Porta | URL | Descrição |
 |---------|-------|-----|-----------|
@@ -158,9 +161,8 @@ docker compose -f docker-compose.observability.yml up -d
 ```
 ├── Dockerfile                      # Build da API
 ├── Dockerfile.worker               # Build do Worker
-├── docker-compose.yml              # Serviços de infraestrutura
+├── docker-compose.yml              # Todos os serviços (infra, app, tools, observability)
 ├── docker-compose.override.yml     # Configurações de desenvolvimento
-├── docker-compose.observability.yml # Grafana, Prometheus, Loki, Jaeger
 ├── .dockerignore                   # Arquivos ignorados no build
 ├── .env.example                    # Template de variáveis de ambiente
 ├── .env                            # Variáveis de ambiente (não versionado)

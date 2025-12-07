@@ -164,7 +164,7 @@ flowchart TB
 - [x] Loki para logs estruturados
 - [x] Grafana com dashboard pré-configurado
 - [x] Serilog exportando para Loki
-- [x] docker-compose.observability.yml
+- [x] ~~docker-compose.observability.yml~~ (Observabilidade integrada ao `docker-compose.yml` principal com perfil `observability`)
 
 ### v2.0 - Features Avançadas
 

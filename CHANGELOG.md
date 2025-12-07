@@ -30,7 +30,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   - Loki para logs estruturados
   - Jaeger para visualização de traces
   - Grafana com dashboards pré-configurados
-- `docker-compose.observability.yml` para stack de monitoramento
+- `docker-compose.yml` atualizado com perfil `observability` para stack de monitoramento
 - Extensões de observabilidade para API e Worker
 - Documentação de observabilidade (`docs/OBSERVABILIDADE.md`)
 

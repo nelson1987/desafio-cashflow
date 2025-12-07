@@ -68,8 +68,7 @@ O projeto foi pensado para ser executado com um único comando, subindo toda a i
 
 ```bash
 # Sobe a API, Worker, Banco de Dados, Cache, Fila e a stack de Observabilidade
-docker compose --profile app up -d --build && \
-docker compose -f docker-compose.observability.yml up -d
+docker compose --profile app --profile observability up -d --build
 ```
 
 Após alguns instantes, a API estará disponível em `http://localhost:5000`.

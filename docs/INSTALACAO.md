@@ -21,12 +21,7 @@ Guia completo para executar o projeto Cashflow com todas as ferramentas.
 > **💡 Nota:** Execute o comando abaixo a partir do diretório raiz do projeto.
 
 ```bash
-docker compose --profile app up -d --build && \
-docker compose -f docker-compose.observability.yml up -d && \
-docker network connect desafio-cashflow_cashflow-network cashflow-grafana 2>/dev/null; \
-docker network connect desafio-cashflow_cashflow-network cashflow-prometheus 2>/dev/null; \
-docker network connect desafio-cashflow_cashflow-network cashflow-loki 2>/dev/null; \
-docker network connect desafio-cashflow_cashflow-network cashflow-jaeger 2>/dev/null; \
+docker compose --profile app --profile observability up -d --build && \
 echo "⏳ Aguardando API iniciar..." && \
 sleep 15 && \
 curl -s http://localhost:5000/health && echo " ✅ API está saudável!"
@@ -39,19 +34,10 @@ curl -s http://localhost:5000/health && echo " ✅ API está saudável!"
 # Navegue para o diretório onde o projeto foi clonado. Ex:
 # cd /path/to/desafio-cashflow
 
-# 2. Subir infraestrutura + API + Worker
-docker compose --profile app up -d --build
+# 2. Subir infraestrutura + API + Worker + Observabilidade
+docker compose --profile app --profile observability up -d --build
 
-# 3. Subir observabilidade (Grafana, Prometheus, Loki, Jaeger)
-docker compose -f docker-compose.observability.yml up -d
-
-# 4. Conectar containers na mesma rede
-docker network connect desafio-cashflow_cashflow-network cashflow-grafana 2>/dev/null
-docker network connect desafio-cashflow_cashflow-network cashflow-prometheus 2>/dev/null
-docker network connect desafio-cashflow_cashflow-network cashflow-loki 2>/dev/null
-docker network connect desafio-cashflow_cashflow-network cashflow-jaeger 2>/dev/null
-
-# 5. Aguardar e verificar health check
+# 3. Aguardar e verificar health check
 sleep 15
 curl http://localhost:5000/health
 ```
@@ -65,12 +51,7 @@ curl http://localhost:5000/health
 > **💡 Nota:** Execute o comando abaixo a partir do diretório raiz do projeto.
 
 ```powershell
-docker compose --profile app up -d --build; `
-docker compose -f docker-compose.observability.yml up -d; `
-docker network connect desafio-cashflow_cashflow-network cashflow-grafana 2>$null; `
-docker network connect desafio-cashflow_cashflow-network cashflow-prometheus 2>$null; `
-docker network connect desafio-cashflow_cashflow-network cashflow-loki 2>$null; `
-docker network connect desafio-cashflow_cashflow-network cashflow-jaeger 2>$null; `
+docker compose --profile app --profile observability up -d --build; `
 Write-Host "⏳ Aguardando API iniciar..." -ForegroundColor Yellow; `
 Start-Sleep -Seconds 15; `
 Invoke-RestMethod -Uri "http://localhost:5000/health"
@@ -180,32 +161,23 @@ docker compose --profile app up -d --build
 ### Tudo (com Observabilidade)
 
 ```bash
-docker compose --profile app up -d --build
-docker compose -f docker-compose.observability.yml up -d
-# + conectar networks (ver comando completo acima)
+docker compose --profile app --profile observability up -d --build
 ```
 
 ---
 
 ## 🛑 Parar os Serviços
 
-### Parar aplicação
+### Parar aplicação e observabilidade
 
 ```bash
-docker compose --profile app down
-```
-
-### Parar observabilidade
-
-```bash
-docker compose -f docker-compose.observability.yml down
+docker compose --profile app --profile observability down
 ```
 
 ### Parar TUDO e remover volumes (⚠️ CUIDADO: apaga dados!)
 
 ```bash
-docker compose --profile app down -v
-docker compose -f docker-compose.observability.yml down -v
+docker compose --profile app --profile observability down -v
 ```
 
 ---
