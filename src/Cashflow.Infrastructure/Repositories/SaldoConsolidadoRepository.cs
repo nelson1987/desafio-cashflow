@@ -88,14 +88,8 @@ public class SaldoConsolidadoRepository : ISaldoConsolidadoRepository
             .Where(l => l.Tipo == (short)TipoLancamento.Debito)
             .Sum(l => l.Valor);
 
-        // Cria o saldo diário
-        var saldoDiario = SaldoDiario.Vazio(data);
-
-        // Usa reflection para definir os valores
-        var tipoSaldo = typeof(SaldoDiario);
-        tipoSaldo.GetProperty(nameof(SaldoDiario.TotalCreditos))?.SetValue(saldoDiario, totalCreditos);
-        tipoSaldo.GetProperty(nameof(SaldoDiario.TotalDebitos))?.SetValue(saldoDiario, totalDebitos);
-        tipoSaldo.GetProperty(nameof(SaldoDiario.QuantidadeLancamentos))?.SetValue(saldoDiario, lancamentos.Count);
+        // Cria o saldo diário usando o construtor público
+        var saldoDiario = new SaldoDiario(data, totalCreditos, totalDebitos, lancamentos.Count);
 
         // Salva no banco
         await SalvarAsync(saldoDiario, cancellationToken);

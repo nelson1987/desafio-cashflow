@@ -10,6 +10,8 @@ using Polly;
 using Polly.CircuitBreaker;
 using Polly.Retry;
 
+using StackExchange.Redis;
+
 using static Cashflow.Infrastructure.InfrastructureConstants;
 
 namespace Cashflow.Infrastructure.Cache;
@@ -20,16 +22,21 @@ namespace Cashflow.Infrastructure.Cache;
 public class RedisCacheService : ICacheService
 {
     private readonly IDistributedCache _cache;
+    private readonly IConnectionMultiplexer? _redisConnection;
     private readonly ILogger<RedisCacheService> _logger;
     private readonly ResiliencePipeline _resiliencePipeline;
     private readonly JsonSerializerOptions _jsonOptions;
+    private readonly string _instanceName;
 
     public RedisCacheService(
         IDistributedCache cache,
-        ILogger<RedisCacheService> logger)
+        ILogger<RedisCacheService> logger,
+        IConnectionMultiplexer? redisConnection = null)
     {
         _cache = cache;
+        _redisConnection = redisConnection;
         _logger = logger;
+        _instanceName = InfrastructureSettings.Cache.InstanceName;
         _jsonOptions = new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -141,13 +148,52 @@ public class RedisCacheService : ICacheService
 
     public async Task RemoverPorPrefixoAsync(string prefixo, CancellationToken cancellationToken = default)
     {
-        // Nota: IDistributedCache não suporta remoção por prefixo nativamente
-        // Para implementação real, seria necessário usar StackExchange.Redis diretamente
-        // com SCAN e DEL ou usar um padrão de invalidação diferente
-        _logger.LogWarning(
-            LogTemplates.RemoverPorPrefixoNaoSuportado,
-            prefixo);
-        await Task.CompletedTask;
+        if (_redisConnection == null)
+        {
+            _logger.LogWarning(
+                "RemoverPorPrefixoAsync: IConnectionMultiplexer não disponível, operação ignorada para prefixo: {Prefixo}",
+                prefixo);
+            return;
+        }
+
+        try
+        {
+            await _resiliencePipeline.ExecuteAsync(async _ =>
+            {
+                var database = _redisConnection.GetDatabase();
+                var server = _redisConnection.GetServers().FirstOrDefault();
+
+                if (server == null)
+                {
+                    _logger.LogWarning("RemoverPorPrefixoAsync: Nenhum servidor Redis disponível");
+                    return;
+                }
+
+                // Adiciona o prefixo da instância se configurado
+                var pattern = $"{_instanceName}{prefixo}*";
+
+                var keysToDelete = new List<RedisKey>();
+
+                // Usa SCAN para encontrar chaves de forma eficiente (não bloqueante)
+                await foreach (var key in server.KeysAsync(pattern: pattern))
+                {
+                    keysToDelete.Add(key);
+                }
+
+                if (keysToDelete.Count > 0)
+                {
+                    await database.KeyDeleteAsync(keysToDelete.ToArray());
+                    _logger.LogInformation(
+                        "RemoverPorPrefixoAsync: {Count} chaves removidas com prefixo: {Prefixo}",
+                        keysToDelete.Count,
+                        prefixo);
+                }
+            }, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao remover chaves do cache por prefixo: {Prefixo}", prefixo);
+        }
     }
 
     public async Task<bool> ExisteAsync(string chave, CancellationToken cancellationToken = default)

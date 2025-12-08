@@ -16,9 +16,9 @@ public record LancamentoCriadoEvent
     public DateTime Data { get; init; }
 
     /// <summary>
-    /// Tipo do lançamento (Crédito ou Débito)
+    /// Tipo do lançamento (Crédito ou Débito) - serializado como string para compatibilidade
     /// </summary>
-    public TipoLancamento Tipo { get; init; }
+    public string Tipo { get; init; } = string.Empty;
 
     /// <summary>
     /// Valor do lançamento
@@ -26,9 +26,14 @@ public record LancamentoCriadoEvent
     public decimal Valor { get; init; }
 
     /// <summary>
+    /// Descrição do lançamento
+    /// </summary>
+    public string Descricao { get; init; } = string.Empty;
+
+    /// <summary>
     /// Timestamp de quando o evento foi criado
     /// </summary>
-    public DateTime CriadoEm { get; init; } = DateTime.UtcNow;
+    public DateTime Timestamp { get; init; } = DateTime.UtcNow;
 
     public LancamentoCriadoEvent() { }
 
@@ -36,7 +41,8 @@ public record LancamentoCriadoEvent
     {
         LancamentoId = lancamento.Id;
         Data = lancamento.Data;
-        Tipo = lancamento.Tipo;
+        Tipo = lancamento.Tipo.ToString();
         Valor = lancamento.Valor;
+        Descricao = lancamento.Descricao;
     }
 }

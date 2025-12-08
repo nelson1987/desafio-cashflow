@@ -24,7 +24,8 @@ public class Lancamento
         Id = Guid.NewGuid();
         Valor = valor;
         Tipo = tipo;
-        Data = data.Date;
+        // Normaliza a data para UTC para evitar problemas de fuso horário
+        Data = DateTime.SpecifyKind(data.Date, DateTimeKind.Utc);
         Descricao = descricao;
     }
 

@@ -20,8 +20,9 @@ public class LancamentoCriadoEventTests
         // Assert
         evento.LancamentoId.ShouldBe(lancamento.Id);
         evento.Data.ShouldBe(lancamento.Data);
-        evento.Tipo.ShouldBe(TipoLancamento.Credito);
+        evento.Tipo.ShouldBe(TipoLancamento.Credito.ToString());
         evento.Valor.ShouldBe(100m);
+        evento.Descricao.ShouldBe("Venda");
     }
 
     [Fact]
@@ -33,6 +34,8 @@ public class LancamentoCriadoEventTests
         // Assert
         evento.LancamentoId.ShouldBe(Guid.Empty);
         evento.Valor.ShouldBe(0m);
+        evento.Tipo.ShouldBe(string.Empty);
+        evento.Descricao.ShouldBe(string.Empty);
     }
 
     [Fact]
@@ -45,11 +48,11 @@ public class LancamentoCriadoEventTests
         var evento = new LancamentoCriadoEvent(lancamento);
 
         // Assert
-        evento.Tipo.ShouldBe(TipoLancamento.Debito);
+        evento.Tipo.ShouldBe(TipoLancamento.Debito.ToString());
     }
 
     [Fact]
-    public void CriadoEm_DeveSerDefinidoAutomaticamente()
+    public void Timestamp_DeveSerDefinidoAutomaticamente()
     {
         // Arrange
         var antesDoEvento = DateTime.UtcNow;
@@ -59,8 +62,8 @@ public class LancamentoCriadoEventTests
         var depoisDoEvento = DateTime.UtcNow;
 
         // Assert
-        evento.CriadoEm.ShouldBeGreaterThanOrEqualTo(antesDoEvento);
-        evento.CriadoEm.ShouldBeLessThanOrEqualTo(depoisDoEvento);
+        evento.Timestamp.ShouldBeGreaterThanOrEqualTo(antesDoEvento);
+        evento.Timestamp.ShouldBeLessThanOrEqualTo(depoisDoEvento);
     }
 
     [Fact]
@@ -71,13 +74,15 @@ public class LancamentoCriadoEventTests
         {
             LancamentoId = Guid.NewGuid(),
             Data = DateTime.Today,
-            Tipo = TipoLancamento.Credito,
-            Valor = 250m
+            Tipo = TipoLancamento.Credito.ToString(),
+            Valor = 250m,
+            Descricao = "Teste"
         };
 
         // Assert
         evento.LancamentoId.ShouldNotBe(Guid.Empty);
         evento.Valor.ShouldBe(250m);
-        evento.Tipo.ShouldBe(TipoLancamento.Credito);
+        evento.Tipo.ShouldBe("Credito");
+        evento.Descricao.ShouldBe("Teste");
     }
 }

@@ -99,7 +99,7 @@ public class RabbitMqIntegrationTests : IAsyncLifetime
         var receivedEvent = await _fixture.ConsumeMessageAsync<LancamentoCriadoEvent>();
         receivedEvent.ShouldNotBeNull();
         receivedEvent.Valor.ShouldBe(1000m);
-        receivedEvent.Tipo.ShouldBe(TipoLancamento.Credito);
+        receivedEvent.Tipo.ShouldBe(TipoLancamento.Credito.ToString());
         receivedEvent.LancamentoId.ShouldNotBe(Guid.Empty);
     }
 
@@ -280,7 +280,7 @@ public class RabbitMqIntegrationTests : IAsyncLifetime
         received.ShouldNotBeNull();
         received.LancamentoId.ShouldBe(evento.LancamentoId);
         received.Valor.ShouldBe(2500.50m);
-        received.Tipo.ShouldBe(TipoLancamento.Debito);
+        received.Tipo.ShouldBe(TipoLancamento.Debito.ToString());
         received.Data.ShouldBe(new DateTime(2024, 6, 15));
     }
 

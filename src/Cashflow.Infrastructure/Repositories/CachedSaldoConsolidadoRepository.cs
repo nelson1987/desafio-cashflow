@@ -49,14 +49,27 @@ public class CachedSaldoConsolidadoRepository : ISaldoConsolidadoRepository
 
     public async Task SalvarAsync(SaldoDiario saldoDiario, CancellationToken cancellationToken = default)
     {
+        var cacheKey = CacheKeys.SaldoConsolidado(saldoDiario.Data);
+
+        // Invalida o cache ANTES de salvar para evitar leituras sujas durante a operação
+        // Isso garante que consultas concorrentes irão ao banco buscar dados frescos
+        await _cache.RemoverAsync(cacheKey, cancellationToken);
+
         // Salva no banco
         await _inner.SalvarAsync(saldoDiario, cancellationToken);
 
-        // Atualiza o cache
-        var cacheKey = CacheKeys.SaldoConsolidado(saldoDiario.Data);
-        await _cache.DefinirAsync(cacheKey, saldoDiario, CacheTtl, cancellationToken);
-
-        _logger.LogDebug(LogTemplates.CacheAtualizado, saldoDiario.Data.ToShortDateString());
+        // Atualiza o cache com o novo valor
+        // Se falhar aqui, a próxima leitura irá ao banco (fail gracefully)
+        try
+        {
+            await _cache.DefinirAsync(cacheKey, saldoDiario, CacheTtl, cancellationToken);
+            _logger.LogDebug(LogTemplates.CacheAtualizado, saldoDiario.Data.ToShortDateString());
+        }
+        catch (Exception ex)
+        {
+            // Log do erro, mas não propaga - cache será reconstruído na próxima leitura
+            _logger.LogWarning(ex, "Falha ao atualizar cache após salvar saldo. Cache será reconstruído na próxima leitura. Data: {Data}", saldoDiario.Data.ToShortDateString());
+        }
     }
 
     public async Task<SaldoDiario> RecalcularAsync(DateTime data, CancellationToken cancellationToken = default)

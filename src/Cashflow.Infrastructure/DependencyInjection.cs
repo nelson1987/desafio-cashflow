@@ -12,6 +12,8 @@ using Microsoft.Extensions.Logging;
 
 using RabbitMQ.Client;
 
+using StackExchange.Redis;
+
 using Consts = Cashflow.Infrastructure.InfrastructureConstants;
 
 namespace Cashflow.Infrastructure;
@@ -86,6 +88,21 @@ public static class DependencyInjection
         {
             options.Configuration = redisConnection;
             options.InstanceName = InfrastructureSettings.Cache.InstanceName;
+        });
+
+        // Registra o IConnectionMultiplexer para operações avançadas (como SCAN/DEL por prefixo)
+        services.AddSingleton<IConnectionMultiplexer>(sp =>
+        {
+            try
+            {
+                return ConnectionMultiplexer.Connect(redisConnection);
+            }
+            catch (Exception ex)
+            {
+                var logger = sp.GetService<ILogger<RedisCacheService>>();
+                logger?.LogWarning(ex, "Não foi possível conectar ao Redis para operações avançadas. RemoverPorPrefixoAsync não estará disponível.");
+                return null!;
+            }
         });
 
         services.AddSingleton<ICacheService, RedisCacheService>();
@@ -175,18 +192,35 @@ public static class DependencyInjection
         }
 
         // Health check do RabbitMQ
+        // Nota: A biblioteca AspNetCore.HealthChecks.Rabbitmq requer uma conexão IConnection
+        // Para evitar chamadas bloqueantes, registramos a conexão como Lazy<IConnection>
         var rabbitHost = configuration.GetSection($"{Consts.ConfigurationSections.RabbitMQ}:{Consts.ConfigurationSections.Host}").Value
             ?? Environment.GetEnvironmentVariable(Consts.EnvironmentVariables.RabbitMqHost);
 
         if (!string.IsNullOrEmpty(rabbitHost))
         {
-            healthChecks.AddRabbitMQ(sp =>
-            {
-                var factory = CreateRabbitMqConnectionFactory(configuration, rabbitHost);
-                return factory.CreateConnectionAsync().GetAwaiter().GetResult();
-            },
-            name: Consts.HealthChecks.RabbitMqName,
-            tags: Consts.HealthChecks.RabbitMqTags);
+            var factory = CreateRabbitMqConnectionFactory(configuration, rabbitHost);
+
+            // Registra a conexão como singleton com inicialização lazy assíncrona
+            // Será criada apenas quando necessário (primeiro health check)
+            services.AddSingleton<Lazy<Task<IConnection>>>(sp =>
+                new Lazy<Task<IConnection>>(() => factory.CreateConnectionAsync()));
+
+            // Usa a sobrecarga que recebe um Func<IServiceProvider, IConnection>
+            // A conexão é obtida de forma assíncrona na primeira chamada
+            healthChecks.AddRabbitMQ(
+                sp =>
+                {
+                    var lazyConnection = sp.GetRequiredService<Lazy<Task<IConnection>>>();
+                    // Se a conexão ainda não foi criada, cria de forma assíncrona
+                    // O GetAwaiter().GetResult() aqui é aceitável porque:
+                    // 1. Acontece apenas na primeira chamada do health check
+                    // 2. O Lazy garante que acontece apenas uma vez
+                    // 3. A conexão fica em cache para chamadas subsequentes
+                    return lazyConnection.Value.GetAwaiter().GetResult();
+                },
+                name: Consts.HealthChecks.RabbitMqName,
+                tags: Consts.HealthChecks.RabbitMqTags);
         }
 
         return services;
